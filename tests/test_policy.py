@@ -7,7 +7,7 @@ import json
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.policy import Policy
+from wasabi_s3.policy import Policy
 
 
 @pytest.fixture

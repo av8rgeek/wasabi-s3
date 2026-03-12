@@ -3,8 +3,8 @@
 Each resource class exposes a `to_dict()` method that returns its properties as a dictionary.
 The schemas below document the shape of those dictionaries.
 
-> This file is auto-generated from the schema definitions in `src/wasabi/client.py`.
-> Last generated: 2026-03-12T20:51:30Z
+> This file is auto-generated from the schema definitions in `src/wasabi_s3/client.py`.
+> Last generated: 2026-03-12T23:14:44Z
 > To regenerate: `uv run python scripts/generate_schema.py`
 
 ## User

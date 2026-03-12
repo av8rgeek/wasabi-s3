@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.group import Group
+from wasabi_s3.group import Group
 
 
 @pytest.fixture

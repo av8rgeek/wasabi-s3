@@ -6,7 +6,7 @@ Usage:
 """
 import json
 from datetime import datetime, timezone
-from wasabi.client import Client
+from wasabi_s3.client import Client
 
 # Descriptions for each key in each schema.
 # If you add a key to a schema, add a description here too.
@@ -173,7 +173,7 @@ def generate() -> str:
     lines.append("The schemas below document the shape of those dictionaries.")
     lines.append("")
     timestamp: str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    lines.append("> This file is auto-generated from the schema definitions in `src/wasabi/client.py`.")
+    lines.append("> This file is auto-generated from the schema definitions in `src/wasabi_s3/client.py`.")
     lines.append(f"> Last generated: {timestamp}")
     lines.append("> To regenerate: `uv run python scripts/generate_schema.py`")
     lines.append("")

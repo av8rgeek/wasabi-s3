@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.bucket import Bucket
+from wasabi_s3.bucket import Bucket
 
 
 @pytest.fixture
@@ -343,7 +343,7 @@ class TestForceDeleteBucket:
         result = bucket.force_delete_bucket()
         assert result is True
 
-    @patch("wasabi.bucket.requests.delete")
+    @patch("wasabi_s3.bucket.requests.delete")
     def test_success_204_returns_true(self, mock_requests_delete, mock_existing_bucket):
         bucket, client = mock_existing_bucket
         mock_response = MagicMock()
@@ -353,7 +353,7 @@ class TestForceDeleteBucket:
         assert result is True
         mock_requests_delete.assert_called_once()
 
-    @patch("wasabi.bucket.requests.delete")
+    @patch("wasabi_s3.bucket.requests.delete")
     def test_non_204_returns_false(self, mock_requests_delete, mock_existing_bucket):
         bucket, client = mock_existing_bucket
         mock_response = MagicMock()
@@ -363,7 +363,7 @@ class TestForceDeleteBucket:
         result = bucket.force_delete_bucket()
         assert result is False
 
-    @patch("wasabi.bucket.requests.delete")
+    @patch("wasabi_s3.bucket.requests.delete")
     def test_client_error_returns_false(self, mock_requests_delete, mock_existing_bucket):
         bucket, client = mock_existing_bucket
         mock_requests_delete.side_effect = _client_error("InternalError")

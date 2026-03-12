@@ -6,7 +6,7 @@ Documents current behavior as-is, including known quirks.
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.user import User
+from wasabi_s3.user import User
 
 
 @pytest.fixture
