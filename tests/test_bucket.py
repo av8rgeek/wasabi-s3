@@ -79,14 +79,12 @@ class TestBucketInit:
         assert props["bucket_policy"] == {}
         assert props["versioning"] is False
 
-    def test_mutable_default_arg_billing_data(self, mock_boto3_client):
-        """Current behavior: mutable default dict={} in __init__ signature.
-        This is a known bug — shared across all calls."""
+    def test_default_arg_billing_data_is_none(self, mock_boto3_client):
+        """billing_data defaults to None to avoid mutable default arg bug."""
         import inspect
         sig = inspect.signature(WasabiBucket.__init__)
         default = sig.parameters["billing_data"].default
-        assert default == {}
-        assert isinstance(default, dict)
+        assert default is None
 
 
 class TestBucketExists:
@@ -186,13 +184,13 @@ class TestBucketObjects:
         assert "Contents" in result
 
     def test_list_objects_returns_none_on_error(self, mock_existing_bucket):
-        """Current behavior: returns None on error, not empty dict."""
+        """Returns empty dict on error."""
         bucket, client = mock_existing_bucket
         client.list_objects.side_effect = ClientError(
             {"Error": {"Code": "AccessDenied", "Message": "nope"}}, "ListObjects"
         )
         result = bucket.list_objects()
-        assert result is None
+        assert result == {}
 
     def test_put_object_returns_true_on_success(self, mock_existing_bucket):
         bucket, client = mock_existing_bucket
@@ -240,10 +238,9 @@ class TestBucketBillingMetrics:
         result = bucket.get_bucket_object_count(billing_data=billing_data)
         assert result == 120
 
-    def test_mutable_default_arg_in_get_bucket_size_gb(self):
-        """Current behavior: mutable default dict={} in signature."""
+    def test_default_arg_in_get_bucket_size_gb_is_none(self):
+        """billing_data defaults to None to avoid mutable default arg bug."""
         import inspect
         sig = inspect.signature(WasabiBucket.get_bucket_size_gb)
         default = sig.parameters["billing_data"].default
-        assert default == {}
-        assert isinstance(default, dict)
+        assert default is None

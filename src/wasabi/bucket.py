@@ -12,8 +12,10 @@ class WasabiBucket(Wasabi):
     """
     This bucket is for creating, deleting, and managing individual Wasabi buckets.
     """
-    def __init__(self, bucket_name: str, region: str = "", billing_data: dict={}) -> None:
+    def __init__(self, bucket_name: str, region: str = "", billing_data: dict | None = None) -> None:
         self.__logger = logging.getLogger(__name__)
+        if billing_data is None:
+            billing_data = {}
         # Deal with making sure the region has a valid value
         if region == "":
             region = WasabiEndpoints.to_lower("us-east-1")
@@ -222,7 +224,7 @@ class WasabiBucket(Wasabi):
             return self._client.list_objects(Bucket=self.bucket_name)
         except ClientError as e:
             self.__logger.error(f"Error listing objects: {e}")
-            return None
+            return {}
 
     def put_object(self, key: str, body: str) -> bool:
         """
@@ -250,7 +252,7 @@ class WasabiBucket(Wasabi):
             self.__logger.error(f"Error deleting object: {e}")
             return False
 
-    def get_bucket_size_gb(self, billing_data: dict={}) -> float:
+    def get_bucket_size_gb(self, billing_data: dict | None = None) -> float:
         """
         Returns the size of the bucket in GB rounded to 3 decimal places.
         Since getting the billing data is a slow process, we only get it if we have not
@@ -275,7 +277,7 @@ class WasabiBucket(Wasabi):
                 total_storage_gb = active_storage_gb + deleted_storage_gb
         return round(total_storage_gb, 3)
 
-    def get_bucket_object_count(self, billing_data: dict={}) -> int:
+    def get_bucket_object_count(self, billing_data: dict | None = None) -> int:
         """
         Get the number of objects in the bucket
         Since getting the billing data is a slow process, we only get it if we have not

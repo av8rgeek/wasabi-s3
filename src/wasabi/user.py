@@ -18,7 +18,7 @@ class WasabiUser(Wasabi):
         self.__logger = logging.getLogger(__name__)
         self._client: botocore.client = self._new_client(self.iam_region)
         self.username: str = user_name
-        self.__properties: list = self._Wasabi__schema_user.copy()
+        self.__properties: dict = self._Wasabi__schema_user.copy()
         self.__properties["name"] = user_name
         if self.user_exists():
             self.__update_arn_property()
@@ -40,6 +40,8 @@ class WasabiUser(Wasabi):
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchEntity":
                 return False
+            self.__logger.error(f"Error checking user existence: {e}")
+            return False
 
     def get_user(self) -> dict:
         """
@@ -67,7 +69,7 @@ class WasabiUser(Wasabi):
             user = self.get_user()
         return user
 
-    def delete_user(self) -> dict:
+    def delete_user(self) -> bool:
         """
         Delete the user and return a boolean response.
         """
@@ -93,7 +95,7 @@ class WasabiUser(Wasabi):
         """
         return self.__properties["arn"]
 
-    def get_api_keys(self) -> list:
+    def get_api_keys(self) -> dict:
         """
         Get the API keys for the user.
         """
@@ -189,7 +191,7 @@ class WasabiUser(Wasabi):
                     self.__logger.error(f"Error deleting API key {key['AccessKeyId']}: {e}")
         if count == len(metadata):
             response = True
-            self.__properties["api-keys"] = []
+            self.__properties["api-keys"] = {}
         else:
             self.__logger.warning("Not all API keys were deleted")
         return response

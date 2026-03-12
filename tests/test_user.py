@@ -87,7 +87,7 @@ class TestUserExists:
             {"Error": {"Code": "ServiceFailure", "Message": "boom"}}, "GetUser"
         )
         result = user.user_exists()
-        assert result is None
+        assert result is False
 
 
 class TestUserCRUD:
@@ -172,4 +172,4 @@ class TestUserApiKeys:
         result = user.delete_all_api_keys()
         assert result is True
         props = user.export_properties()
-        assert props["api-keys"] == []  # Bug: should be {}
+        assert props["api-keys"] == {}

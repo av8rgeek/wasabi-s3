@@ -11,12 +11,12 @@ class WasabiGroup(Wasabi):
         self.__logger = logging.getLogger(__name__)
         self._client: botocore.client = self._new_client(self.iam_region)
         self.group_name: str = group_name
+        self.arn: str = ""
         self.__properties: dict = self._Wasabi__schema_group.copy()
         self.__properties["name"] = group_name
         if self.group_exists():
-            self.__properties["arn"] = (
-                self.arn
-            )  # TODO: Is this really the best way to set the arn?
+            self.__properties["arn"] = self.arn
+            # TODO: Is this really the best way to set the arn?
             self.__properties["members"] = self.get_members_arn()
             self.__properties["attached-policies"] = self.get_attached_policies()
             self.__properties["inline-policies"] = self.get_inline_group_policies()
@@ -24,14 +24,13 @@ class WasabiGroup(Wasabi):
     def export_properties(self) -> dict:
         return self.__properties
 
-    def group_exists(self):
+    def group_exists(self) -> bool:
         group_exists: bool = False
         group_list: dict = self.get_groups()
         for group in group_list:
             if group["GroupName"] == self.group_name:
-                self.arn: str = group[
-                    "Arn"
-                ]  # TODO: Is this really the best way to set the arn?
+                self.arn: str = group["Arn"]
+                # TODO: Is this really the best way to set the arn?
                 group_exists = True
         return group_exists
 
@@ -39,9 +38,8 @@ class WasabiGroup(Wasabi):
         group_created: bool = False
         if not self.group_exists():
             response: dict = self._client.create_group(GroupName=self.group_name)
-            self.arn: str = response["Group"][
-                "Arn"
-            ]  # TODO: Is this really the best way to set the arn?
+            self.arn: str = response["Group"]["Arn"]
+            # TODO: Is this really the best way to set the arn?
             self.__properties["arn"] = self.arn
             group_created = True
         return group_created
@@ -54,9 +52,7 @@ class WasabiGroup(Wasabi):
         if self.group_exists():
             try:
                 group = self._client.get_group(GroupName=self.group_name)
-                self.arn = group["Group"][
-                    "Arn"
-                ]  # TODO: Is this really the best way to set the arn?
+                self.arn = group["Group"]["Arn"]  # TODO: Is this really the best way to set the arn?
             except ClientError as e:
                 if e.response["Error"]["Code"] != "NoSuchEntity":
                     self.__logger.error(f"Error getting group: {e}")

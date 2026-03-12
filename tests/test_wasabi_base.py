@@ -71,12 +71,12 @@ class TestDateTimeEncoder:
         result = json.dumps({"d": d}, cls=DateTimeEncoder)
         assert '"2024-01-15"' in result
 
-    def test_non_date_returns_none(self):
-        """Current behavior: returns None for non-date types instead of raising.
-        This is a known bug — should call super().default(obj)."""
+    def test_non_date_raises_type_error(self):
+        """Non-date types raise TypeError via super().default()."""
         encoder = DateTimeEncoder()
-        result = encoder.default({"not": "a date"})
-        assert result is None
+        import pytest
+        with pytest.raises(TypeError):
+            encoder.default({"not": "a date"})
 
 
 class TestWasabiInit:
