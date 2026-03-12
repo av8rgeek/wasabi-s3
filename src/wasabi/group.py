@@ -28,10 +28,10 @@ class Group(Client):
 
     def group_exists(self) -> bool:
         group_exists: bool = False
-        group_list: dict = self.get_groups()
+        group_list: list[dict] = self.get_groups()
         for group in group_list:
             if group["GroupName"] == self.group_name:
-                self.arn: str = group["Arn"]
+                self.arn = group["Arn"]
                 # TODO: Is this really the best way to set the arn?
                 group_exists = True
         return group_exists
@@ -40,7 +40,7 @@ class Group(Client):
         group_created: bool = False
         if not self.group_exists():
             response: dict = self._client.create_group(GroupName=self.group_name)
-            self.arn: str = response["Group"]["Arn"]
+            self.arn = response["Group"]["Arn"]
             # TODO: Is this really the best way to set the arn?
             self.__properties["arn"] = self.arn
             group_created = True

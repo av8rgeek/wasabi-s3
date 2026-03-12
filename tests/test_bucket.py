@@ -3,7 +3,7 @@ Characterization tests for Bucket.
 Documents current behavior as-is, including known quirks.
 """
 import json
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import patch, MagicMock
 
 import pytest
 from botocore.exceptions import ClientError

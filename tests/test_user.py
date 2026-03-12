@@ -2,7 +2,6 @@
 Characterization tests for User.
 Documents current behavior as-is, including known quirks.
 """
-from unittest.mock import patch, MagicMock
 
 import pytest
 from botocore.exceptions import ClientError
@@ -176,7 +175,7 @@ class TestUserApiKeys:
 
 
 class TestGetGroups:
-    """Document get_groups behavior."""
+    """Document list_groups behavior."""
 
     def test_returns_list_of_group_names(self, mock_existing_user):
         user, client = mock_existing_user
@@ -186,14 +185,14 @@ class TestGetGroups:
                 {"GroupName": "developers"},
             ]
         }
-        result = user.get_groups()
+        result = user.list_groups()
         assert result == ["admins", "developers"]
         client.list_groups_for_user.assert_called_once_with(UserName="alice")
 
     def test_returns_empty_list_when_no_groups(self, mock_existing_user):
         user, client = mock_existing_user
         client.list_groups_for_user.return_value = {"Groups": []}
-        result = user.get_groups()
+        result = user.list_groups()
         assert result == []
 
     def test_returns_empty_list_on_error(self, mock_existing_user):
@@ -202,7 +201,7 @@ class TestGetGroups:
             {"Error": {"Code": "NoSuchEntity", "Message": "not found"}},
             "ListGroupsForUser",
         )
-        result = user.get_groups()
+        result = user.list_groups()
         assert result == []
 
 

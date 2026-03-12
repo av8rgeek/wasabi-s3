@@ -5,7 +5,6 @@ automatically.
 """
 from pathlib import Path
 
-from wasabi.client import Client
 from scripts.generate_schema import generate
 
 SCHEMA_MD = Path(__file__).parent.parent / "SCHEMA.md"

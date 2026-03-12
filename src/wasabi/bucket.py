@@ -5,7 +5,7 @@ from .client import Client, Endpoint, S3_ENDPOINTS
 import botocore.client
 import botocore.waiter
 from botocore.exceptions import ClientError
-from aws_requests_auth.aws_auth import AWSRequestsAuth
+from requests_aws4auth import AWS4Auth
 
 
 class Bucket(Client):
@@ -112,7 +112,7 @@ class Bucket(Client):
             self.__logger.debug(f"Creating bucket: {self.bucket_name}")
             try:
                 waiter: botocore.waiter = self._client.get_waiter("bucket_exists")
-                response: dict = self._client.create_bucket(Bucket=self.bucket_name)
+                self._client.create_bucket(Bucket=self.bucket_name)
                 waiter.wait(Bucket=self.bucket_name)
                 self.__properties["region"] = self.get_bucket_location()
                 return_value = True
@@ -153,12 +153,11 @@ class Bucket(Client):
                 waiter: botocore.waiter = self._client.get_waiter("bucket_not_exists")
                 url: str = f"https://{self.endpoint.split('/')[-1]}/{self.bucket_name}"
                 params: dict = {"force_delete": "true"}
-                credentials: AWSRequestsAuth = AWSRequestsAuth(
-                    aws_access_key=self._access_key_id,
-                    aws_secret_access_key=self._secret_access_key,
-                    aws_host=self.endpoint.split("/")[-1],
-                    aws_region=self.__properties["region"],
-                    aws_service="s3",
+                credentials: AWS4Auth = AWS4Auth(
+                    self._access_key_id,
+                    self._secret_access_key,
+                    self.__properties["region"],
+                    "s3",
                 )
                 http_response: requests.Response = requests.delete(
                     url, params=params, auth=credentials, timeout=self.request_timeout

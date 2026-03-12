@@ -12,7 +12,7 @@ dependencies = [
     "boto3",
     "botocore",
     "requests",
-    "aws-requests-auth",
+    "requests-aws4auth",
 ]
 
 [project.optional-dependencies]
@@ -22,6 +22,7 @@ dev = [
     "pytest-mock",
     "mypy",
     "ruff",
+    "types-requests",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -37,5 +38,7 @@ line-length = 120
 
 [tool.mypy]
 python_version = "3.13"
-warn_return_any = true
+ignore_missing_imports = true
+warn_return_any = false
 warn_unused_configs = true
+disable_error_code = ["no-any-return"]

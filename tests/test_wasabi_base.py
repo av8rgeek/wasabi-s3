@@ -4,7 +4,7 @@ Documents current behavior as-is, including known quirks.
 """
 import json
 from datetime import datetime, date, timezone
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from botocore.exceptions import ClientError

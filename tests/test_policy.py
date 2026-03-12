@@ -3,7 +3,6 @@ Characterization tests for Policy.
 Documents current behavior as-is, including known quirks.
 """
 import json
-from unittest.mock import patch, MagicMock
 
 import pytest
 from botocore.exceptions import ClientError

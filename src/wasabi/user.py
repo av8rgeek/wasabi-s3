@@ -37,7 +37,7 @@ class User(Client):
         """
         response: bool = False
         try:
-            user: dict = self._client.get_user(UserName=self.username)
+            self._client.get_user(UserName=self.username)
             response = True
         except ClientError as e:
             if e.response["Error"]["Code"] != "NoSuchEntity":
@@ -61,7 +61,7 @@ class User(Client):
         user: dict = {}
         if not self.user_exists():
             try:
-                user: dict = self._client.create_user(UserName=self.username)
+                user = self._client.create_user(UserName=self.username)
                 self.__properties["arn"] = user["User"]["Arn"]
             except ClientError as e:
                 self.__logger.error(f"Error creating user: {e}")
@@ -102,7 +102,7 @@ class User(Client):
         """
         key: dict = {}
         try:
-            response: list = self._client.list_access_keys(UserName=self.username)
+            response: dict = self._client.list_access_keys(UserName=self.username)
             for access_key in response["AccessKeyMetadata"]:
                 key[access_key["AccessKeyId"]] = {
                     "secret-key": "",
@@ -173,7 +173,7 @@ class User(Client):
         response: bool = False
         metadata: list = []
         try:
-            metadata: list = self._client.list_access_keys(UserName=self.username)[
+            metadata = self._client.list_access_keys(UserName=self.username)[
                 "AccessKeyMetadata"
             ]
         except ClientError as e:
@@ -197,7 +197,7 @@ class User(Client):
             self.__logger.warning("Not all API keys were deleted")
         return response
 
-    def get_groups(self) -> list[str]:
+    def list_groups(self) -> list[str]:
         """
         List the groups the user belongs to.
         """

@@ -80,7 +80,7 @@ class Policy(Client):
             self.__properties["arn"] = policy["Policy"]["Arn"]
         except ClientError as e:
             if e.response["Error"]["Code"] == "EntityAlreadyExists":
-                self.__logger.error(f"Policy already exists")
+                self.__logger.error("Policy already exists")
                 policy = self.get_policy()
             else:
                 self.__logger.error(f"Error creating policy: {e}")

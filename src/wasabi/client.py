@@ -23,24 +23,24 @@ class Endpoint(Enum):
     endpoint for the Wasabi client based on the region.
     """
 
-    S3: str = "https://s3.wasabisys.com"  # Actually the primary for us-east-1
-    US_EAST_1: str = "https://s3.us-east-1.wasabisys.com"
-    US_EAST_2: str = "https://s3.us-east-2.wasabisys.com"
-    US_CENTRAL_1: str = "https://s3.us-central-1.wasabisys.com"
-    US_WEST_1: str = "https://s3.us-west-1.wasabisys.com"
-    US_WEST_2: str = "https://s3.us-west-2.wasabisys.com"
-    CA_CENTRAL_1: str = "https://s3.ca-central-1.wasabisys.com"
-    EU_CENTRAL_1: str = "https://s3.eu-central-1.wasabisys.com"
-    EU_CENTRAL_2: str = "https://s3.eu-central-2.wasabisys.com"
-    EU_WEST_1: str = "https://s3.eu-west-1.wasabisys.com"
-    EU_WEST_2: str = "https://s3.eu-west-2.wasabisys.com"
-    AP_NORTHEAST_1: str = "https://s3.ap-northeast-1.wasabisys.com"
-    AP_NORTHEAST_2: str = "https://s3.ap-northeast-2.wasabisys.com"
-    AP_SOUTHEAST_1: str = "https://s3.ap-southeast-1.wasabisys.com"
-    AP_SOUTHEAST_2: str = "https://s3.ap-southeast-2.wasabisys.com"
-    IAM: str = "https://iam.wasabisys.com"  # (AWS SDK)
-    STS: str = "https://sts.wasabisys.com"  # (AWS SDK)
-    BILLING: str = "https://billing.wasabisys.com"  # Wasabi-specific, no AWS SDK
+    S3 = "https://s3.wasabisys.com"  # Actually the primary for us-east-1
+    US_EAST_1 = "https://s3.us-east-1.wasabisys.com"
+    US_EAST_2 = "https://s3.us-east-2.wasabisys.com"
+    US_CENTRAL_1 = "https://s3.us-central-1.wasabisys.com"
+    US_WEST_1 = "https://s3.us-west-1.wasabisys.com"
+    US_WEST_2 = "https://s3.us-west-2.wasabisys.com"
+    CA_CENTRAL_1 = "https://s3.ca-central-1.wasabisys.com"
+    EU_CENTRAL_1 = "https://s3.eu-central-1.wasabisys.com"
+    EU_CENTRAL_2 = "https://s3.eu-central-2.wasabisys.com"
+    EU_WEST_1 = "https://s3.eu-west-1.wasabisys.com"
+    EU_WEST_2 = "https://s3.eu-west-2.wasabisys.com"
+    AP_NORTHEAST_1 = "https://s3.ap-northeast-1.wasabisys.com"
+    AP_NORTHEAST_2 = "https://s3.ap-northeast-2.wasabisys.com"
+    AP_SOUTHEAST_1 = "https://s3.ap-southeast-1.wasabisys.com"
+    AP_SOUTHEAST_2 = "https://s3.ap-southeast-2.wasabisys.com"
+    IAM = "https://iam.wasabisys.com"  # (AWS SDK)
+    STS = "https://sts.wasabisys.com"  # (AWS SDK)
+    BILLING = "https://billing.wasabisys.com"  # Wasabi-specific, no AWS SDK
     # CONSOLE: str = https://console.wasabisys.com"
 
     @staticmethod
@@ -315,7 +315,7 @@ class Client:
         """
         try:
             iam_client: botocore.client.BaseClient = self._create_client(self.iam_region)
-            response: list[dict] = iam_client.list_policies(Scope=scope)
+            response: dict = iam_client.list_policies(Scope=scope)
             return response["Policies"]
         except ClientError as e:
             self.__logger.error(f"Error getting managed policies: {e}")
@@ -327,8 +327,8 @@ class Client:
         """
         try:
             iam_client: botocore.client.BaseClient = self._create_client(self.iam_region)
-            groups: list[dict] = iam_client.list_groups()
-            return groups["Groups"]
+            response: dict = iam_client.list_groups()
+            return response["Groups"]
         except ClientError as e:
             self.__logger.error(f"Error getting groups: {e}")
             return []
@@ -339,8 +339,8 @@ class Client:
         """
         try:
             iam_client: botocore.client.BaseClient = self._create_client(self.iam_region)
-            users: list[dict] = iam_client.list_users()
-            return users["Users"]
+            response: dict = iam_client.list_users()
+            return response["Users"]
         except ClientError as e:
             self.__logger.error(f"Error getting users: {e}")
             return []
@@ -364,7 +364,6 @@ class Client:
 
         By default, it returns the data for the current day for all buckets
         """
-        billing_data: dict = {}
         reporting_period_length: int = 1  # the number of days to report on
         end_date: datetime = datetime.now(tz=timezone.utc)
         # the trailing slash is critical to this API endpoint
@@ -411,7 +410,7 @@ class WasabiBillingApiAuthorization(requests.auth.AuthBase):
         self.access_key_id: str = credentials["id"]
         self.secret_access_key: str = credentials["secret"]
 
-    def __call__(self, r) -> requests.Request:
+    def __call__(self, r: requests.PreparedRequest) -> requests.PreparedRequest:
         """
         This is the method that is called when the class is used as an
         authorization object.

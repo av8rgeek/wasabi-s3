@@ -3,7 +3,6 @@ Shared fixtures for wasabi characterization tests.
 These mock external dependencies (boto3, requests) so tests
 never hit real APIs.
 """
-import os
 import pytest
 from unittest.mock import MagicMock, patch
 
