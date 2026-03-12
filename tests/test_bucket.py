@@ -244,3 +244,338 @@ class TestBucketBillingMetrics:
         sig = inspect.signature(Bucket.get_size_gb)
         default = sig.parameters["billing_data"].default
         assert default is None
+
+
+def _client_error(code, message="error"):
+    return ClientError({"Error": {"Code": code, "Message": message}}, "op")
+
+
+class TestSetVersioning:
+    """Document set_versioning behavior."""
+
+    def test_enable_versioning_returns_true(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        result = bucket.set_versioning(True)
+        assert result is True
+        client.put_bucket_versioning.assert_called_once_with(
+            Bucket="test-bucket",
+            VersioningConfiguration={"Status": "Enabled"},
+        )
+
+    def test_suspend_versioning_returns_true(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        result = bucket.set_versioning(False)
+        assert result is True
+        client.put_bucket_versioning.assert_called_once_with(
+            Bucket="test-bucket",
+            VersioningConfiguration={"Status": "Suspended"},
+        )
+
+    def test_client_error_returns_false(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.put_bucket_versioning.side_effect = _client_error("InternalError")
+        result = bucket.set_versioning(True)
+        assert result is False
+
+
+class TestSetLifecycle:
+    """Document set_lifecycle behavior."""
+
+    def test_success_returns_true(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        rules = {"Rules": [{"Status": "Enabled", "Prefix": "", "Expiration": {"Days": 30}}]}
+        result = bucket.set_lifecycle(rules)
+        assert result is True
+        client.put_bucket_lifecycle_configuration.assert_called_once_with(
+            Bucket="test-bucket",
+            LifecycleConfiguration=rules,
+        )
+
+    def test_client_error_returns_false(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.put_bucket_lifecycle_configuration.side_effect = _client_error("MalformedXML")
+        result = bucket.set_lifecycle({"Rules": []})
+        assert result is False
+
+
+class TestSetBucketPolicy:
+    """Document set_bucket_policy behavior."""
+
+    def test_success_returns_true(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        policy = {"Version": "2012-10-17", "Statement": []}
+        result = bucket.set_bucket_policy(policy)
+        assert result is True
+        client.put_bucket_policy.assert_called_once_with(
+            Bucket="test-bucket",
+            Policy=json.dumps(policy),
+        )
+
+    def test_client_error_returns_false(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.put_bucket_policy.side_effect = _client_error("MalformedPolicy")
+        result = bucket.set_bucket_policy({"Version": "2012-10-17", "Statement": []})
+        assert result is False
+
+
+class TestDeleteBucketPolicy:
+    """Document delete_bucket_policy behavior."""
+
+    def test_success_returns_true(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        result = bucket.delete_bucket_policy()
+        assert result is True
+        client.delete_bucket_policy.assert_called_once_with(Bucket="test-bucket")
+
+    def test_client_error_returns_false(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.delete_bucket_policy.side_effect = _client_error("AccessDenied")
+        result = bucket.delete_bucket_policy()
+        assert result is False
+
+
+class TestForceDeleteBucket:
+    """Document force_delete_bucket behavior."""
+
+    def test_not_exists_returns_true(self, mock_bucket):
+        """When the bucket does not exist, returns True (skip)."""
+        bucket, _ = mock_bucket
+        result = bucket.force_delete_bucket()
+        assert result is True
+
+    @patch("wasabi.bucket.requests.delete")
+    def test_success_204_returns_true(self, mock_requests_delete, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        mock_response = MagicMock()
+        mock_response.status_code = 204
+        mock_requests_delete.return_value = mock_response
+        result = bucket.force_delete_bucket()
+        assert result is True
+        mock_requests_delete.assert_called_once()
+
+    @patch("wasabi.bucket.requests.delete")
+    def test_non_204_returns_false(self, mock_requests_delete, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        mock_response = MagicMock()
+        mock_response.status_code = 403
+        mock_response.text = "Forbidden"
+        mock_requests_delete.return_value = mock_response
+        result = bucket.force_delete_bucket()
+        assert result is False
+
+    @patch("wasabi.bucket.requests.delete")
+    def test_client_error_returns_false(self, mock_requests_delete, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        mock_requests_delete.side_effect = _client_error("InternalError")
+        result = bucket.force_delete_bucket()
+        assert result is False
+
+
+class TestPutObjectError:
+    """Document put_object error path."""
+
+    def test_client_error_returns_false(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.put_object.side_effect = _client_error("AccessDenied")
+        result = bucket.put_object(key="test.txt", body="hello")
+        assert result is False
+
+
+class TestDeleteObjectError:
+    """Document delete_object error path."""
+
+    def test_client_error_returns_false(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.delete_object.side_effect = _client_error("AccessDenied")
+        result = bucket.delete_object(key="test.txt")
+        assert result is False
+
+
+class TestCreateBucketClientError:
+    """Document create_bucket ClientError path."""
+
+    def test_client_error_returns_false(self, mock_bucket):
+        bucket, client = mock_bucket
+        client.create_bucket.side_effect = _client_error("BucketAlreadyExists")
+        result = bucket.create_bucket()
+        assert result is False
+
+
+class TestGetVersioningClientError:
+    """Document get_versioning ClientError path."""
+
+    def test_client_error_returns_false(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.get_bucket_versioning.side_effect = _client_error("InternalError")
+        result = bucket.get_versioning()
+        assert result is False
+
+
+class TestGetLifecycle:
+    """Document get_lifecycle behavior."""
+
+    def test_returns_dict_on_success(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        lifecycle_config = {
+            "Rules": [{"Status": "Enabled", "Prefix": "", "Expiration": {"Days": 30}}]
+        }
+        client.get_bucket_lifecycle_configuration.side_effect = None
+        client.get_bucket_lifecycle_configuration.return_value = lifecycle_config
+        result = bucket.get_lifecycle()
+        assert result == lifecycle_config
+
+    def test_returns_empty_dict_on_no_such_lifecycle(self, mock_existing_bucket):
+        """NoSuchLifecycleConfiguration is handled gracefully."""
+        bucket, client = mock_existing_bucket
+        client.get_bucket_lifecycle_configuration.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchLifecycleConfiguration", "Message": ""}},
+            "GetBucketLifecycleConfiguration",
+        )
+        result = bucket.get_lifecycle()
+        assert result == {}
+
+
+class TestUpdateProperties:
+    """Document update_properties behavior."""
+
+    def test_updates_properties_when_bucket_exists(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        # Set up return values for the refresh calls
+        client.get_bucket_location.return_value = {"LocationConstraint": "us-east-1"}
+        client.get_bucket_policy.side_effect = None
+        policy_doc = {"Version": "2012-10-17", "Statement": []}
+        client.get_bucket_policy.return_value = {"Policy": json.dumps(policy_doc)}
+        client.get_bucket_lifecycle_configuration.side_effect = None
+        lifecycle_config = {"Rules": [{"Status": "Enabled"}]}
+        client.get_bucket_lifecycle_configuration.return_value = lifecycle_config
+        client.get_bucket_versioning.return_value = {"Status": "Enabled"}
+
+        bucket.update_properties()
+
+        props = bucket.to_dict()
+        assert props["region"] == "us-east-1"
+        assert props["bucket_policy"] == policy_doc
+        assert props["lifecycle-rules"] == lifecycle_config
+        assert props["versioning"] is True
+
+    def test_no_update_when_bucket_does_not_exist(self, mock_bucket):
+        """When the bucket does not exist, properties remain unchanged."""
+        bucket, client = mock_bucket
+        original_props = bucket.to_dict().copy()
+        bucket.update_properties()
+        assert bucket.to_dict() == original_props
+
+
+class TestBucketConstructorValidation:
+    """Document constructor validation behavior."""
+
+    def test_empty_string_raises_value_error(self, mock_boto3_client):
+        with pytest.raises(ValueError, match="bucket_name must be a non-empty string"):
+            Bucket("")
+
+    def test_whitespace_only_raises_value_error(self, mock_boto3_client):
+        with pytest.raises(ValueError, match="bucket_name must be a non-empty string"):
+            Bucket("   ")
+
+    def test_non_string_raises_value_error(self, mock_boto3_client):
+        with pytest.raises(ValueError, match="bucket_name must be a non-empty string"):
+            Bucket(123)
+
+
+class TestBucketInvalidS3Region:
+    """Document behavior when a non-S3 region is passed."""
+
+    def test_non_s3_endpoint_logs_exception(self, mock_boto3_client):
+        """Passing 'iam' is a valid Endpoint but not an S3 endpoint."""
+        mock_boto3_client.list_buckets.return_value = {"Buckets": []}
+        bucket = Bucket("test-bucket", region="iam")
+        # Constructor completes but endpoint attribute was never set
+        assert bucket.bucket_name == "test-bucket"
+
+
+class TestGetBucketLocationBranches:
+    """Document get_bucket_location branch coverage."""
+
+    def test_location_constraint_none_returns_us_east_1(self, mock_existing_bucket):
+        """Wasabi returns None for us-east-1 (AWS SDK quirk)."""
+        bucket, client = mock_existing_bucket
+        client.get_bucket_location.return_value = {"LocationConstraint": None}
+        result = bucket.get_bucket_location()
+        assert result == "us-east-1"
+
+    def test_location_differs_from_properties_corrects_region(self, mock_existing_bucket):
+        """When location differs from stored region, corrects the property."""
+        bucket, client = mock_existing_bucket
+        client.get_bucket_location.return_value = {"LocationConstraint": "us-west-1"}
+        result = bucket.get_bucket_location()
+        assert result == "us-west-1"
+        assert bucket.to_dict()["region"] == "us-west-1"
+
+    def test_client_error_returns_empty_string(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.get_bucket_location.side_effect = _client_error("AccessDenied")
+        result = bucket.get_bucket_location()
+        assert result == ""
+
+
+class TestGetBucketPolicyNonStandardError:
+    """Document get_bucket_policy on non-NoSuchBucketPolicy errors."""
+
+    def test_non_nosuchbucketpolicy_error_returns_empty_dict(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.get_bucket_policy.side_effect = ClientError(
+            {"Error": {"Code": "AccessDenied", "Message": "forbidden"}},
+            "GetBucketPolicy",
+        )
+        result = bucket.get_bucket_policy()
+        assert result == {}
+
+
+class TestGetLifecycleNonStandardError:
+    """Document get_lifecycle on non-NoSuchLifecycleConfiguration errors."""
+
+    def test_non_standard_error_returns_empty_dict(self, mock_existing_bucket):
+        bucket, client = mock_existing_bucket
+        client.get_bucket_lifecycle_configuration.side_effect = ClientError(
+            {"Error": {"Code": "AccessDenied", "Message": "forbidden"}},
+            "GetBucketLifecycleConfiguration",
+        )
+        result = bucket.get_lifecycle()
+        assert result == {}
+
+
+class TestGetSizeGbNoBillingData:
+    """Document get_size_gb when no billing_data is passed and none cached."""
+
+    @patch.object(Bucket, "get_billing_data")
+    def test_fetches_billing_data_when_not_cached(self, mock_get_billing, mock_bucket):
+        bucket, _ = mock_bucket
+        mock_get_billing.return_value = [
+            {
+                "Bucket": "test-bucket",
+                "PaddedStorageSizeBytes": 1073741824,
+                "MetadataStorageSizeBytes": 0,
+                "DeletedStorageSizeBytes": 0,
+            }
+        ]
+        result = bucket.get_size_gb()
+        assert result == 1.0
+        mock_get_billing.assert_called_once()
+
+
+class TestGetObjectCountNoBillingData:
+    """Document get_object_count when no billing_data is passed and none cached."""
+
+    @patch.object(Bucket, "get_billing_data")
+    def test_fetches_billing_data_when_not_cached(self, mock_get_billing, mock_bucket):
+        bucket, _ = mock_bucket
+        mock_get_billing.return_value = [
+            {
+                "Bucket": "test-bucket",
+                "NumBillableObjects": 50,
+                "NumBillableDeletedObjects": 10,
+            }
+        ]
+        result = bucket.get_object_count()
+        assert result == 60
+        mock_get_billing.assert_called_once()

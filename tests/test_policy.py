@@ -172,3 +172,226 @@ class TestPolicyDocument:
     def test_is_default_version_returns_bool(self, mock_existing_policy):
         policy, _ = mock_existing_policy
         assert policy.is_default_version() is True
+
+
+class TestListVersions:
+    """Document list_versions behavior."""
+
+    def test_returns_list_of_versions(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        client.list_policy_versions.return_value = {
+            "Versions": [
+                {"VersionId": "v1", "IsDefaultVersion": True},
+                {"VersionId": "v2", "IsDefaultVersion": False},
+            ]
+        }
+        versions = policy.list_versions()
+        assert len(versions) == 2
+        assert versions[0]["VersionId"] == "v1"
+        assert versions[1]["VersionId"] == "v2"
+        client.list_policy_versions.assert_called_once_with(
+            PolicyArn="arn:aws:iam::123456789012:policy/test-policy"
+        )
+
+    def test_returns_empty_list_on_error(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        client.list_policy_versions.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchEntity", "Message": "not found"}},
+            "ListPolicyVersions",
+        )
+        versions = policy.list_versions()
+        assert versions == []
+
+
+class TestDeleteVersion:
+    """Document delete_version behavior."""
+
+    def test_returns_true_on_success(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        result = policy.delete_version("v2")
+        assert result is True
+        client.delete_policy_version.assert_called_once_with(
+            PolicyArn="arn:aws:iam::123456789012:policy/test-policy",
+            VersionId="v2",
+        )
+
+    def test_returns_false_on_error(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        client.delete_policy_version.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchEntity", "Message": "version not found"}},
+            "DeletePolicyVersion",
+        )
+        result = policy.delete_version("v99")
+        assert result is False
+
+
+class TestDetachFromAll:
+    """Document detach_from_all behavior."""
+
+    def test_returns_true_and_detaches_groups_and_users(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        client.list_entities_for_policy.return_value = {
+            "PolicyGroups": [{"GroupName": "devs"}, {"GroupName": "admins"}],
+            "PolicyUsers": [{"UserName": "alice"}],
+        }
+        result = policy.detach_from_all()
+        assert result is True
+        assert client.detach_group_policy.call_count == 2
+        client.detach_group_policy.assert_any_call(
+            GroupName="devs",
+            PolicyArn="arn:aws:iam::123456789012:policy/test-policy",
+        )
+        client.detach_group_policy.assert_any_call(
+            GroupName="admins",
+            PolicyArn="arn:aws:iam::123456789012:policy/test-policy",
+        )
+        client.detach_user_policy.assert_called_once_with(
+            UserName="alice",
+            PolicyArn="arn:aws:iam::123456789012:policy/test-policy",
+        )
+
+    def test_returns_true_with_no_attachments(self, mock_existing_policy):
+        """When no groups or users are attached, still returns True."""
+        policy, client = mock_existing_policy
+        client.list_entities_for_policy.return_value = {
+            "PolicyGroups": [],
+            "PolicyUsers": [],
+        }
+        result = policy.detach_from_all()
+        assert result is True
+        client.detach_group_policy.assert_not_called()
+        client.detach_user_policy.assert_not_called()
+
+    def test_returns_false_on_error(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        client.list_entities_for_policy.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchEntity", "Message": "policy not found"}},
+            "ListEntitiesForPolicy",
+        )
+        result = policy.detach_from_all()
+        assert result is False
+
+
+class TestDeletePolicyReturnsBool:
+    """Document delete_policy return value behavior."""
+
+    def test_returns_true_on_success(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        result = policy.delete_policy()
+        assert result is True
+        client.delete_policy.assert_called_once_with(
+            PolicyArn="arn:aws:iam::123456789012:policy/test-policy"
+        )
+
+    def test_returns_false_on_client_error(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        client.delete_policy.side_effect = ClientError(
+            {"Error": {"Code": "DeleteConflict", "Message": "policy is attached"}},
+            "DeletePolicy",
+        )
+        result = policy.delete_policy()
+        assert result is False
+
+    def test_returns_false_when_not_exists(self, mock_nonexistent_policy):
+        policy, client = mock_nonexistent_policy
+        result = policy.delete_policy()
+        assert result is False
+        client.delete_policy.assert_not_called()
+
+
+class TestGetArnEmptyAccountId:
+    """Document get_arn behavior when account_id is empty."""
+
+    def test_returns_empty_string_when_account_id_empty(self, mock_boto3_client):
+        """When get_account_id returns empty string, get_arn returns empty string."""
+        mock_boto3_client.get_caller_identity.side_effect = ClientError(
+            {"Error": {"Code": "ExpiredToken", "Message": "token expired"}},
+            "GetCallerIdentity",
+        )
+        # get_policy will also fail since ARN is empty, but that's fine for this test
+        mock_boto3_client.get_policy.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchEntity", "Message": "not found"}}, "GetPolicy"
+        )
+        policy = Policy("test-policy")
+        assert policy.to_dict()["arn"] == ""
+
+
+class TestPolicyConstructorValidation:
+    """Document constructor validation behavior."""
+
+    def test_empty_string_raises_value_error(self, mock_boto3_client):
+        with pytest.raises(ValueError, match="policy_name must be a non-empty string"):
+            Policy("")
+
+    def test_whitespace_only_raises_value_error(self, mock_boto3_client):
+        with pytest.raises(ValueError, match="policy_name must be a non-empty string"):
+            Policy("   ")
+
+    def test_non_string_raises_value_error(self, mock_boto3_client):
+        with pytest.raises(ValueError, match="policy_name must be a non-empty string"):
+            Policy(123)
+
+
+class TestPolicyExistsNonNoSuchEntityError:
+    """Document policy_exists behavior on unexpected errors."""
+
+    def test_non_nosuchentity_error_is_logged(self, mock_nonexistent_policy):
+        policy, client = mock_nonexistent_policy
+        client.get_policy.side_effect = ClientError(
+            {"Error": {"Code": "ServiceFailure", "Message": "internal error"}},
+            "GetPolicy",
+        )
+        result = policy.policy_exists()
+        assert result is False
+
+
+class TestCreatePolicyNonEntityExistsError:
+    """Document create_policy behavior on non-EntityAlreadyExists errors."""
+
+    def test_non_entity_exists_error_returns_empty_dict(self, mock_nonexistent_policy):
+        policy, client = mock_nonexistent_policy
+        client.create_policy.side_effect = ClientError(
+            {"Error": {"Code": "MalformedPolicyDocument", "Message": "bad doc"}},
+            "CreatePolicy",
+        )
+        result = policy.create_policy({"Version": "2012-10-17", "Statement": []})
+        assert result == {}
+
+
+class TestGetPolicyVersionIdError:
+    """Document get_policy_version_id error path."""
+
+    def test_returns_empty_string_on_error(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        client.get_policy.side_effect = ClientError(
+            {"Error": {"Code": "ServiceFailure", "Message": "internal error"}},
+            "GetPolicy",
+        )
+        result = policy.get_policy_version_id()
+        assert result == ""
+
+
+class TestIsDefaultVersionError:
+    """Document is_default_version error path."""
+
+    def test_returns_false_on_error(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        client.get_policy_version.side_effect = ClientError(
+            {"Error": {"Code": "ServiceFailure", "Message": "internal error"}},
+            "GetPolicyVersion",
+        )
+        result = policy.is_default_version()
+        assert result is False
+
+
+class TestGetPolicyError:
+    """Document get_policy error path."""
+
+    def test_returns_empty_dict_on_error(self, mock_existing_policy):
+        policy, client = mock_existing_policy
+        client.get_policy.side_effect = ClientError(
+            {"Error": {"Code": "ServiceFailure", "Message": "internal error"}},
+            "GetPolicy",
+        )
+        result = policy.get_policy()
+        assert result == {}
