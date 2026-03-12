@@ -9,7 +9,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.client import Client, Endpoint, DateTimeEncoder, WasabiBillingApiAuthorization
+from wasabi.client import Client, Endpoint, S3_ENDPOINTS, DateTimeEncoder, WasabiBillingApiAuthorization
 
 
 class TestEndpoint:
@@ -43,19 +43,19 @@ class TestEndpoint:
         assert Endpoint.to_upper("") == ""
 
     def test_s3_endpoints_list_length(self):
-        assert len(Endpoint.S3_ENDPOINTS) == 15
+        assert len(S3_ENDPOINTS) == 15
 
     def test_s3_endpoints_contains_primary(self):
-        assert Endpoint.S3.value in Endpoint.S3_ENDPOINTS
+        assert Endpoint.S3.value in S3_ENDPOINTS
 
     def test_s3_endpoints_does_not_contain_iam(self):
-        assert Endpoint.IAM.value not in Endpoint.S3_ENDPOINTS
+        assert Endpoint.IAM.value not in S3_ENDPOINTS
 
     def test_s3_endpoints_does_not_contain_sts(self):
-        assert Endpoint.STS.value not in Endpoint.S3_ENDPOINTS
+        assert Endpoint.STS.value not in S3_ENDPOINTS
 
     def test_s3_endpoints_does_not_contain_billing(self):
-        assert Endpoint.BILLING.value not in Endpoint.S3_ENDPOINTS
+        assert Endpoint.BILLING.value not in S3_ENDPOINTS
 
 
 class TestDateTimeEncoder:

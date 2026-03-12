@@ -1,7 +1,7 @@
 import json
 import requests
 import logging
-from .client import Client, Endpoint
+from .client import Client, Endpoint, S3_ENDPOINTS
 import botocore.client
 import botocore.waiter
 from botocore.exceptions import ClientError
@@ -26,7 +26,7 @@ class Bucket(Client):
             if Endpoint.to_upper(region) in Endpoint.__members__:
                 region = Endpoint.to_lower(region)
                 endpoint: str = Endpoint[Endpoint.to_upper(region)].value
-                if endpoint in Endpoint.S3_ENDPOINTS:
+                if endpoint in S3_ENDPOINTS:
                     self.endpoint = endpoint
                 else:
                     self.__logger.exception(f"Invalid Wasabi S3 region ({region})")

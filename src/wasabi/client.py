@@ -52,9 +52,7 @@ class Endpoint(Enum):
         return name.upper().replace("-", "_")
 
 
-Endpoint.S3_ENDPOINTS = [
-    # This has to be defined outside the enum class because the Endpoint class
-    # is not fully defined until the end of the class definition
+S3_ENDPOINTS: list[str] = [
     Endpoint.S3.value,
     Endpoint.US_EAST_1.value,
     Endpoint.US_EAST_2.value,
