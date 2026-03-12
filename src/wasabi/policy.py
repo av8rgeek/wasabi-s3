@@ -18,7 +18,7 @@ class Policy(Client):
             raise ValueError("policy_name must be a non-empty string")
         super().__init__()
         self.__logger = logging.getLogger(__name__)
-        self._client: botocore.client = self._new_client(self.iam_region)
+        self._client: botocore.client = self._create_client(self.iam_region)
         self.policy_name: str = policy_name
         self.__properties: dict = self._schema_policy
         self.__properties["name"] = policy_name
@@ -41,7 +41,7 @@ class Policy(Client):
             self.__properties["actions"] = self.get_policy_actions()
             self.__properties["resources"] = self.get_policy_resources()
 
-    def export_properties(self) -> dict:
+    def to_dict(self) -> dict:
         """
         Export the properties of the policy
         """
@@ -52,7 +52,7 @@ class Policy(Client):
         Use this to get the ARN for the bucket
         """
         try:
-            sts_client: botocore.client = self._new_client(self.sts_region)
+            sts_client: botocore.client = self._create_client(self.sts_region)
             account_id: str = sts_client.get_caller_identity()["Account"]
             return f"arn:aws:iam::{account_id}:policy/{self.policy_name}"
         except ClientError as e:

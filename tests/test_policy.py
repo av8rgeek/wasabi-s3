@@ -58,7 +58,7 @@ class TestPolicyInit:
 
     def test_nonexistent_policy_has_default_document(self, mock_nonexistent_policy):
         policy, _ = mock_nonexistent_policy
-        props = policy.export_properties()
+        props = policy.to_dict()
         assert props["name"] == "test-policy"
         assert props["arn"] == "arn:aws:iam::123456789012:policy/test-policy"
         doc = props["document"]
@@ -69,7 +69,7 @@ class TestPolicyInit:
 
     def test_existing_policy_populates_all_properties(self, mock_existing_policy):
         policy, _ = mock_existing_policy
-        props = policy.export_properties()
+        props = policy.to_dict()
         assert props["name"] == "test-policy"
         assert props["version"] == "v1"
         assert props["is-default-version"] is True
@@ -79,7 +79,7 @@ class TestPolicyInit:
     def test_arn_derived_from_sts_account_id(self, mock_nonexistent_policy):
         """Current behavior: makes STS call during __init__ to build ARN."""
         policy, _ = mock_nonexistent_policy
-        assert policy.export_properties()["arn"] == "arn:aws:iam::123456789012:policy/test-policy"
+        assert policy.to_dict()["arn"] == "arn:aws:iam::123456789012:policy/test-policy"
 
 
 class TestPolicyExists:

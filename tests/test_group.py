@@ -49,7 +49,7 @@ class TestGroupInit:
 
     def test_nonexistent_group_properties(self, mock_nonexistent_group):
         group, _ = mock_nonexistent_group
-        props = group.export_properties()
+        props = group.to_dict()
         assert props["name"] == "devs"
         assert props["arn"] == ""
         assert props["members"] == []
@@ -58,17 +58,17 @@ class TestGroupInit:
 
     def test_existing_group_populates_arn(self, mock_existing_group):
         group, _ = mock_existing_group
-        props = group.export_properties()
+        props = group.to_dict()
         assert props["arn"] == "arn:aws:iam::123456789012:group/devs"
 
     def test_existing_group_populates_members_as_arns(self, mock_existing_group):
         group, _ = mock_existing_group
-        props = group.export_properties()
+        props = group.to_dict()
         assert "arn:aws:iam::123456789012:user/alice" in props["members"]
 
     def test_existing_group_populates_attached_policies(self, mock_existing_group):
         group, _ = mock_existing_group
-        props = group.export_properties()
+        props = group.to_dict()
         assert "arn:aws:iam::123:policy/dev-policy" in props["attached-policies"]
 
 
@@ -138,14 +138,14 @@ class TestGroupMembers:
         group, client = mock_existing_group
         group.add_member("bob")
         client.add_user_to_group.assert_called_once_with(GroupName="devs", UserName="bob")
-        assert "bob" in group.export_properties()["members"]
+        assert "bob" in group.to_dict()["members"]
 
     def test_remove_member_updates_properties(self, mock_existing_group):
         group, client = mock_existing_group
         # The properties have ARNs as members, not usernames
         # But remove_member tries to remove the username from the list
         # This documents the current (potentially inconsistent) behavior
-        props = group.export_properties()
+        props = group.to_dict()
         # Members are ARNs from init, but add_member appends usernames
         assert props["members"] == ["arn:aws:iam::123456789012:user/alice"]
 
@@ -162,7 +162,7 @@ class TestGroupPolicies:
         group, client = mock_existing_group
         group.attach_managed_policy("arn:aws:iam::123:policy/new-policy")
         client.attach_group_policy.assert_called_once()
-        assert "arn:aws:iam::123:policy/new-policy" in group.export_properties()["attached-policies"]
+        assert "arn:aws:iam::123:policy/new-policy" in group.to_dict()["attached-policies"]
 
     def test_get_inline_group_policies_empty(self, mock_existing_group):
         group, _ = mock_existing_group

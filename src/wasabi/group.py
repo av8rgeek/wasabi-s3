@@ -11,7 +11,7 @@ class Group(Client):
             raise ValueError("group_name must be a non-empty string")
         super().__init__()
         self.__logger = logging.getLogger(__name__)
-        self._client: botocore.client = self._new_client(self.iam_region)
+        self._client: botocore.client = self._create_client(self.iam_region)
         self.group_name: str = group_name
         self.arn: str = ""
         self.__properties: dict = self._schema_group
@@ -23,7 +23,7 @@ class Group(Client):
             self.__properties["attached-policies"] = self.get_attached_policies()
             self.__properties["inline-policies"] = self.get_inline_group_policies()
 
-    def export_properties(self) -> dict:
+    def to_dict(self) -> dict:
         return self.__properties
 
     def group_exists(self) -> bool:

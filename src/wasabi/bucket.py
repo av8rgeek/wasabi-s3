@@ -33,7 +33,7 @@ class Bucket(Client):
         super().__init__()
         region = Endpoint.to_lower(region)
         self.bucket_name: str = bucket_name
-        self._client: botocore.client = self._new_client(region)
+        self._client: botocore.client = self._create_client(region)
         self.__properties: dict = self._schema_bucket
         self.__properties["name"] = bucket_name
         self.__properties["arn"] = f"arn:aws:s3:::{self.__properties['name']}"
@@ -43,11 +43,11 @@ class Bucket(Client):
             self.__properties["bucket_policy"] = self.get_bucket_policy()
             self.__properties["lifecycle-rules"] = self.get_lifecycle()
             self.__properties["versioning"] = self.get_versioning()
-            self.__properties["gb_used"] = self.get_bucket_size_gb(billing_data=billing_data)
-            self.__properties["object_count"] = self.get_bucket_object_count(billing_data=billing_data)
+            self.__properties["gb_used"] = self.get_size_gb(billing_data=billing_data)
+            self.__properties["object_count"] = self.get_object_count(billing_data=billing_data)
         self.arn: str = self.__properties["arn"]
 
-    def export_properties(self) -> dict:
+    def to_dict(self) -> dict:
         """
         Export the properties of the bucket
         """
@@ -96,7 +96,7 @@ class Bucket(Client):
                 else:
                     location = self.__properties["region"]
             self.endpoint = Endpoint[Endpoint.to_upper(location)].value
-            self._client = self._new_client(location)
+            self._client = self._create_client(location)
         except ClientError as e:
             self.__logger.error(f"Error getting bucket location: {e}")
         return location
@@ -254,7 +254,7 @@ class Bucket(Client):
             self.__logger.error(f"Error deleting object: {e}")
             return False
 
-    def get_bucket_size_gb(self, billing_data: dict | None = None) -> float:
+    def get_size_gb(self, billing_data: dict | None = None) -> float:
         """
         Returns the size of the bucket in GB rounded to 3 decimal places.
         Since getting the billing data is a slow process, we only get it if we have not
@@ -279,7 +279,7 @@ class Bucket(Client):
                 total_storage_gb = active_storage_gb + deleted_storage_gb
         return round(total_storage_gb, 3)
 
-    def get_bucket_object_count(self, billing_data: dict | None = None) -> int:
+    def get_object_count(self, billing_data: dict | None = None) -> int:
         """
         Get the number of objects in the bucket
         Since getting the billing data is a slow process, we only get it if we have not

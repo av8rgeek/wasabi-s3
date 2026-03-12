@@ -58,7 +58,7 @@ class TestBucketInit:
 
     def test_nonexistent_bucket_has_empty_properties(self, mock_bucket):
         bucket, _ = mock_bucket
-        props = bucket.export_properties()
+        props = bucket.to_dict()
         assert props["name"] == "test-bucket"
         assert props["arn"] == "arn:aws:s3:::test-bucket"
         assert props["region"] == "us-east-1"
@@ -68,12 +68,12 @@ class TestBucketInit:
     def test_default_region_is_us_east_1(self, mock_boto3_client):
         mock_boto3_client.list_buckets.return_value = {"Buckets": []}
         bucket = Bucket("test-bucket")
-        props = bucket.export_properties()
+        props = bucket.to_dict()
         assert props["region"] == "us-east-1"
 
     def test_existing_bucket_populates_properties(self, mock_existing_bucket):
         bucket, _ = mock_existing_bucket
-        props = bucket.export_properties()
+        props = bucket.to_dict()
         assert props["name"] == "test-bucket"
         assert props["region"] == "us-east-1"
         assert props["bucket_policy"] == {}
@@ -206,7 +206,7 @@ class TestBucketObjects:
 class TestBucketBillingMetrics:
     """Document billing-based size/count methods."""
 
-    def test_get_bucket_size_gb_from_billing_data(self, mock_existing_bucket):
+    def test_get_size_gb_from_billing_data(self, mock_existing_bucket):
         bucket, _ = mock_existing_bucket
         billing_data = [
             {
@@ -216,17 +216,17 @@ class TestBucketBillingMetrics:
                 "DeletedStorageSizeBytes": 536870912,  # 0.5 GB
             }
         ]
-        result = bucket.get_bucket_size_gb(billing_data=billing_data)
+        result = bucket.get_size_gb(billing_data=billing_data)
         assert result == 1.5
 
-    def test_get_bucket_size_gb_returns_zero_when_not_found(self, mock_existing_bucket):
+    def test_get_size_gb_returns_zero_when_not_found(self, mock_existing_bucket):
         bucket, _ = mock_existing_bucket
         billing_data = [{"Bucket": "other-bucket", "PaddedStorageSizeBytes": 0,
                          "MetadataStorageSizeBytes": 0, "DeletedStorageSizeBytes": 0}]
-        result = bucket.get_bucket_size_gb(billing_data=billing_data)
+        result = bucket.get_size_gb(billing_data=billing_data)
         assert result == 0
 
-    def test_get_bucket_object_count(self, mock_existing_bucket):
+    def test_get_object_count(self, mock_existing_bucket):
         bucket, _ = mock_existing_bucket
         billing_data = [
             {
@@ -235,12 +235,12 @@ class TestBucketBillingMetrics:
                 "NumBillableDeletedObjects": 20,
             }
         ]
-        result = bucket.get_bucket_object_count(billing_data=billing_data)
+        result = bucket.get_object_count(billing_data=billing_data)
         assert result == 120
 
-    def test_default_arg_in_get_bucket_size_gb_is_none(self):
+    def test_default_arg_in_get_size_gb_is_none(self):
         """billing_data defaults to None to avoid mutable default arg bug."""
         import inspect
-        sig = inspect.signature(Bucket.get_bucket_size_gb)
+        sig = inspect.signature(Bucket.get_size_gb)
         default = sig.parameters["billing_data"].default
         assert default is None

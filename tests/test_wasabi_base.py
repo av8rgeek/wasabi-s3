@@ -128,37 +128,37 @@ class TestWasabiInit:
 
 
 class TestWasabiNewClient:
-    """Document _new_client behavior."""
+    """Document _create_client behavior."""
 
     def test_valid_s3_region_creates_client(self, mock_boto3_client):
         wasabi = Client()
-        client = wasabi._new_client("us-east-1")
+        client = wasabi._create_client("us-east-1")
         assert client is not None
 
     def test_s3_region_remaps_to_us_east_1(self, mock_boto3_client):
         """'s3' is a special alias that maps to us-east-1 region."""
         wasabi = Client()
         import boto3
-        wasabi._new_client("s3")
+        wasabi._create_client("s3")
         call_kwargs = boto3.client.call_args
         assert call_kwargs[1]["region_name"] == "us-east-1"
 
     def test_iam_region_remaps_to_us_east_1(self, mock_boto3_client):
         wasabi = Client()
         import boto3
-        wasabi._new_client("iam")
+        wasabi._create_client("iam")
         call_kwargs = boto3.client.call_args
         assert call_kwargs[1]["region_name"] == "us-east-1"
 
     def test_invalid_region_raises_exception(self):
         wasabi = Client()
         with pytest.raises(Exception, match="Invalid Wasabi region"):
-            wasabi._new_client("invalid-region")
+            wasabi._create_client("invalid-region")
 
     def test_billing_region_raises_valueerror(self, mock_boto3_client):
         wasabi = Client()
         with pytest.raises(ValueError, match="Billing API does not use a boto3 client"):
-            wasabi._new_client("billing")
+            wasabi._create_client("billing")
 
     def test_raises_valueerror_on_empty_credentials(self, monkeypatch, mock_boto3_client):
         """Raises ValueError (not assert) so validation works with python -O."""
@@ -166,7 +166,7 @@ class TestWasabiNewClient:
         monkeypatch.setenv("WASABI_SECRET_KEY", "")
         wasabi = Client()
         with pytest.raises(ValueError, match="Missing Wasabi credentials"):
-            wasabi._new_client("us-east-1")
+            wasabi._create_client("us-east-1")
 
 
 class TestWasabiGetBuckets:

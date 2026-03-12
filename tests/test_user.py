@@ -40,20 +40,20 @@ class TestUserInit:
 
     def test_nonexistent_user_properties(self, mock_nonexistent_user):
         user, _ = mock_nonexistent_user
-        props = user.export_properties()
+        props = user.to_dict()
         assert props["name"] == "alice"
         assert props["arn"] == ""
         assert props["api-keys"] == {}
 
     def test_existing_user_populates_arn(self, mock_existing_user):
         user, _ = mock_existing_user
-        props = user.export_properties()
+        props = user.to_dict()
         assert props["name"] == "alice"
         assert props["arn"] == "arn:aws:iam::123456789012:user/alice"
 
     def test_existing_user_populates_api_keys(self, mock_existing_user):
         user, _ = mock_existing_user
-        props = user.export_properties()
+        props = user.to_dict()
         assert "AKIA1111" in props["api-keys"]
         assert props["api-keys"]["AKIA1111"]["status"] == "Active"
         assert props["api-keys"]["AKIA1111"]["secret-key"] == ""
@@ -61,7 +61,7 @@ class TestUserInit:
     def test_properties_annotated_as_list_but_is_dict(self, mock_nonexistent_user):
         """Current behavior: __properties annotated as list but is actually dict."""
         user, _ = mock_nonexistent_user
-        props = user.export_properties()
+        props = user.to_dict()
         assert isinstance(props, dict)
 
 
@@ -171,5 +171,5 @@ class TestUserApiKeys:
         }
         result = user.delete_all_api_keys()
         assert result is True
-        props = user.export_properties()
+        props = user.to_dict()
         assert props["api-keys"] == {}

@@ -17,7 +17,7 @@ class User(Client):
             raise ValueError("user_name must be a non-empty string")
         super().__init__()
         self.__logger = logging.getLogger(__name__)
-        self._client: botocore.client = self._new_client(self.iam_region)
+        self._client: botocore.client = self._create_client(self.iam_region)
         self.username: str = user_name
         self.__properties: dict = self._schema_user
         self.__properties["name"] = user_name
@@ -25,7 +25,7 @@ class User(Client):
             self.__update_arn_property()
             self.update_api_keys()
         
-    def export_properties(self) -> dict:
+    def to_dict(self) -> dict:
         """
         Export the properties of the user.
         """

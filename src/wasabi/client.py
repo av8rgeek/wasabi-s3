@@ -388,7 +388,7 @@ An complete schema would look similar to this example:
     def get_example_schema(self) -> str:
         return self.__schema_example
 
-    def _new_client(self, region: str) -> botocore.client:
+    def _create_client(self, region: str) -> botocore.client:
         if not self._access_key_id or not self._secret_access_key:
             raise ValueError("Missing Wasabi credentials")
 
@@ -433,7 +433,7 @@ An complete schema would look similar to this example:
         location. It returns a dict of the bucket names and locations.
         """
         bucket_list: dict = {}
-        s3_client: botocore.client = self._new_client("s3")
+        s3_client: botocore.client = self._create_client("s3")
         buckets: dict = s3_client.list_buckets()
         for bucket in buckets["Buckets"]:
             bucket_location: str = self.__get_bucket_location(bucket["Name"])
@@ -445,7 +445,7 @@ An complete schema would look similar to this example:
         Get the location of a bucket
         """
         location = ""
-        s3_client: botocore.client = self._new_client("s3")
+        s3_client: botocore.client = self._create_client("s3")
         try:
             bucket_location: dict = s3_client.get_bucket_location(Bucket=bucket_name)
             # Wasabi returns a LocationConstraint null (None) value for us-east-1
@@ -464,7 +464,7 @@ An complete schema would look similar to this example:
         # TODO: annoptate scope possible values
         """
         try:
-            iam_client: botocore.client = self._new_client(self.iam_region)
+            iam_client: botocore.client = self._create_client(self.iam_region)
             response: list[dict] = iam_client.list_policies(Scope=scope)
             return response["Policies"]
         except ClientError as e:
@@ -476,7 +476,7 @@ An complete schema would look similar to this example:
         List the groups
         """
         try:
-            iam_client: botocore.client = self._new_client(self.iam_region)
+            iam_client: botocore.client = self._create_client(self.iam_region)
             groups: list[dict] = iam_client.list_groups()
             return groups["Groups"]
         except ClientError as e:
@@ -488,7 +488,7 @@ An complete schema would look similar to this example:
         List the groups
         """
         try:
-            iam_client: botocore.client = self._new_client(self.iam_region)
+            iam_client: botocore.client = self._create_client(self.iam_region)
             users: list[dict] = iam_client.list_users()
             return users["Users"]
         except ClientError as e:
