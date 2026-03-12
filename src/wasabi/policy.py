@@ -18,7 +18,7 @@ class Policy(Client):
             raise ValueError("policy_name must be a non-empty string")
         super().__init__()
         self.__logger = logging.getLogger(__name__)
-        self._client: botocore.client = self._create_client(self.iam_region)
+        self._client: botocore.client.BaseClient = self._create_client(self.iam_region)
         self.policy_name: str = policy_name
         self.__properties: dict = self._schema_policy
         self.__properties["name"] = policy_name
@@ -52,7 +52,7 @@ class Policy(Client):
         Use this to get the ARN for the bucket
         """
         try:
-            sts_client: botocore.client = self._create_client(self.sts_region)
+            sts_client: botocore.client.BaseClient = self._create_client(self.sts_region)
             account_id: str = sts_client.get_caller_identity()["Account"]
             return f"arn:aws:iam::{account_id}:policy/{self.policy_name}"
         except ClientError as e:
@@ -142,14 +142,14 @@ class Policy(Client):
             document = policy["PolicyVersion"]["Document"]
         return document
 
-    def get_policy_actions(self) -> list:
+    def get_policy_actions(self) -> list[str]:
         """
         Returns the actions allowed by the policy document in
         in self.__properties["document"].
         """
         return self.__properties["document"]["Statement"][0]["Action"]
 
-    def get_policy_resources(self) -> list:
+    def get_policy_resources(self) -> list[str]:
         """
         Returns the resources that the policy document applies to
         in self.__properties["document"].

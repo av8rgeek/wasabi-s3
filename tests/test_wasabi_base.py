@@ -152,7 +152,7 @@ class TestWasabiNewClient:
 
     def test_invalid_region_raises_exception(self):
         wasabi = Client()
-        with pytest.raises(Exception, match="Invalid Wasabi region"):
+        with pytest.raises(ValueError, match="Invalid Wasabi region"):
             wasabi._create_client("invalid-region")
 
     def test_billing_region_raises_valueerror(self, mock_boto3_client):

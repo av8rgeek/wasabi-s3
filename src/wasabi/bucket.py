@@ -33,7 +33,7 @@ class Bucket(Client):
         super().__init__()
         region = Endpoint.to_lower(region)
         self.bucket_name: str = bucket_name
-        self._client: botocore.client = self._create_client(region)
+        self._client: botocore.client.BaseClient = self._create_client(region)
         self.__properties: dict = self._schema_bucket
         self.__properties["name"] = bucket_name
         self.__properties["arn"] = f"arn:aws:s3:::{self.__properties['name']}"
@@ -68,7 +68,7 @@ class Bucket(Client):
         Check if the bucket exists in any region
         """
         bucket_exists: bool = False
-        response: botocore.client = self._client.list_buckets()
+        response: dict = self._client.list_buckets()
         for bucket in response["Buckets"]:
             if bucket["Name"] == self.bucket_name:
                 bucket_exists = True
@@ -264,7 +264,7 @@ class Bucket(Client):
         if billing_data:
             self._billing_data = billing_data
         if not self._billing_data:
-            print("Getting billing data in the bucket class")
+            self.__logger.info("Getting billing data in the bucket class")
             self._billing_data = self.get_billing_data()
         for bucket in self._billing_data:
             if bucket["Bucket"] == self.bucket_name:
@@ -289,7 +289,7 @@ class Bucket(Client):
         if billing_data:
             self._billing_data = billing_data
         if not self._billing_data:
-            print("Getting billing data in the bucket class")
+            self.__logger.info("Getting billing data in the bucket class")
             self._billing_data = self.get_billing_data()
         for bucket in self._billing_data:
             if bucket["Bucket"] == self.bucket_name:

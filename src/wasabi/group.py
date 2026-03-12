@@ -11,7 +11,7 @@ class Group(Client):
             raise ValueError("group_name must be a non-empty string")
         super().__init__()
         self.__logger = logging.getLogger(__name__)
-        self._client: botocore.client = self._create_client(self.iam_region)
+        self._client: botocore.client.BaseClient = self._create_client(self.iam_region)
         self.group_name: str = group_name
         self.arn: str = ""
         self.__properties: dict = self._schema_group
@@ -36,7 +36,7 @@ class Group(Client):
                 group_exists = True
         return group_exists
 
-    def create_group(self):
+    def create_group(self) -> bool:
         group_created: bool = False
         if not self.group_exists():
             response: dict = self._client.create_group(GroupName=self.group_name)
@@ -46,7 +46,7 @@ class Group(Client):
             group_created = True
         return group_created
 
-    def get_group(self):
+    def get_group(self) -> dict:
         """
         Get the group by name. Test for existence first.
         """
@@ -60,7 +60,7 @@ class Group(Client):
                     self.__logger.error(f"Error getting group: {e}")
         return group
 
-    def get_members_username(self) -> list:
+    def get_members_username(self) -> list[str]:
         """
         Return the users in the group as a list of usernames
         """
@@ -74,7 +74,7 @@ class Group(Client):
             members.append(user["UserName"])
         return members
 
-    def get_members_arn(self) -> list:
+    def get_members_arn(self) -> list[str]:
         """
         Return the users in the group as a list of ARNs
         """
@@ -150,7 +150,7 @@ class Group(Client):
         else:
             self.__logger.warning(f"No inline policies for group {self.group_name}")
 
-    def get_attached_policies(self) -> list:
+    def get_attached_policies(self) -> list[str]:
         policies: list = []
         try:
             attached_policies: dict = self._client.list_attached_group_policies(
