@@ -1,14 +1,14 @@
 import json
 import requests
 import logging
-from .client import Wasabi, WasabiEndpoints
+from .client import Client, Endpoint
 import botocore.client
 import botocore.waiter
 from botocore.exceptions import ClientError
 from aws_requests_auth.aws_auth import AWSRequestsAuth
 
 
-class WasabiBucket(Wasabi):
+class Bucket(Client):
     """
     This bucket is for creating, deleting, and managing individual Wasabi buckets.
     """
@@ -20,18 +20,18 @@ class WasabiBucket(Wasabi):
             billing_data = {}
         # Deal with making sure the region has a valid value
         if region == "":
-            region = WasabiEndpoints.to_lower("us-east-1")
-            self.endpoint: str = WasabiEndpoints[WasabiEndpoints.to_upper(region)].value
+            region = Endpoint.to_lower("us-east-1")
+            self.endpoint: str = Endpoint[Endpoint.to_upper(region)].value
         else:
-            if WasabiEndpoints.to_upper(region) in WasabiEndpoints.__members__:
-                region = WasabiEndpoints.to_lower(region)
-                endpoint: str = WasabiEndpoints[WasabiEndpoints.to_upper(region)].value
-                if endpoint in WasabiEndpoints.S3_ENDPOINTS:
+            if Endpoint.to_upper(region) in Endpoint.__members__:
+                region = Endpoint.to_lower(region)
+                endpoint: str = Endpoint[Endpoint.to_upper(region)].value
+                if endpoint in Endpoint.S3_ENDPOINTS:
                     self.endpoint = endpoint
                 else:
                     self.__logger.exception(f"Invalid Wasabi S3 region ({region})")
         super().__init__()
-        region = WasabiEndpoints.to_lower(region)
+        region = Endpoint.to_lower(region)
         self.bucket_name: str = bucket_name
         self._client: botocore.client = self._new_client(region)
         self.__properties: dict = self._schema_bucket
@@ -95,7 +95,7 @@ class WasabiBucket(Wasabi):
                     self.__properties["region"] = location
                 else:
                     location = self.__properties["region"]
-            self.endpoint = WasabiEndpoints[WasabiEndpoints.to_upper(location)].value
+            self.endpoint = Endpoint[Endpoint.to_upper(location)].value
             self._client = self._new_client(location)
         except ClientError as e:
             self.__logger.error(f"Error getting bucket location: {e}")

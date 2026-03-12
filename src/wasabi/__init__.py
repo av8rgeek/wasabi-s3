@@ -1,9 +1,9 @@
-from .bucket import WasabiBucket
-from .group import WasabiGroup
-from .user import WasabiUser
-from .policy import WasabiPolicy
-from .client import Wasabi, DateTimeEncoder
+from .bucket import Bucket
+from .group import Group
+from .user import User
+from .policy import Policy
+from .client import Client, Endpoint, DateTimeEncoder
 
 # For those people who want to leverage the
 # from wasabi import * syntax:
-__all__ = ["Wasabi", "WasabiBucket", "WasabiGroup", "WasabiUser", "WasabiPolicy", "DateTimeEncoder"]
+__all__ = ["Client", "Bucket", "Group", "User", "Policy", "Endpoint", "DateTimeEncoder"]

@@ -1,11 +1,11 @@
 import json
 import logging
-from .client import Wasabi
+from .client import Client
 from botocore.exceptions import ClientError
 import botocore.client
 
 
-class WasabiPolicy(Wasabi):
+class Policy(Client):
     """
     Creates a new managed policy to attach to a group/user
     """

@@ -1,5 +1,5 @@
 """
-Characterization tests for WasabiBucket.
+Characterization tests for Bucket.
 Documents current behavior as-is, including known quirks.
 """
 import json
@@ -8,21 +8,21 @@ from unittest.mock import patch, MagicMock, PropertyMock
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.bucket import WasabiBucket
+from wasabi.bucket import Bucket
 
 
 @pytest.fixture
 def mock_bucket(mock_boto3_client):
-    """Create a WasabiBucket with a mocked client where bucket does NOT exist."""
+    """Create a Bucket with a mocked client where bucket does NOT exist."""
     mock_boto3_client.list_buckets.return_value = {"Buckets": []}
     mock_boto3_client.get_waiter.return_value = MagicMock()
-    bucket = WasabiBucket("test-bucket", region="us-east-1")
+    bucket = Bucket("test-bucket", region="us-east-1")
     return bucket, mock_boto3_client
 
 
 @pytest.fixture
 def mock_existing_bucket(mock_boto3_client):
-    """Create a WasabiBucket with a mocked client where bucket exists.
+    """Create a Bucket with a mocked client where bucket exists.
     Passes billing_data to avoid hitting the real billing API."""
     mock_boto3_client.list_buckets.return_value = {
         "Buckets": [{"Name": "test-bucket"}]
@@ -49,7 +49,7 @@ def mock_existing_bucket(mock_boto3_client):
             "NumBillableDeletedObjects": 0,
         }
     ]
-    bucket = WasabiBucket("test-bucket", region="us-east-1", billing_data=billing_data)
+    bucket = Bucket("test-bucket", region="us-east-1", billing_data=billing_data)
     return bucket, mock_boto3_client
 
 
@@ -67,7 +67,7 @@ class TestBucketInit:
 
     def test_default_region_is_us_east_1(self, mock_boto3_client):
         mock_boto3_client.list_buckets.return_value = {"Buckets": []}
-        bucket = WasabiBucket("test-bucket")
+        bucket = Bucket("test-bucket")
         props = bucket.export_properties()
         assert props["region"] == "us-east-1"
 
@@ -82,7 +82,7 @@ class TestBucketInit:
     def test_default_arg_billing_data_is_none(self, mock_boto3_client):
         """billing_data defaults to None to avoid mutable default arg bug."""
         import inspect
-        sig = inspect.signature(WasabiBucket.__init__)
+        sig = inspect.signature(Bucket.__init__)
         default = sig.parameters["billing_data"].default
         assert default is None
 
@@ -241,6 +241,6 @@ class TestBucketBillingMetrics:
     def test_default_arg_in_get_bucket_size_gb_is_none(self):
         """billing_data defaults to None to avoid mutable default arg bug."""
         import inspect
-        sig = inspect.signature(WasabiBucket.get_bucket_size_gb)
+        sig = inspect.signature(Bucket.get_bucket_size_gb)
         default = sig.parameters["billing_data"].default
         assert default is None

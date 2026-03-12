@@ -3,12 +3,12 @@ The WasabiUser class is used to represent and manage a single Wasabi user.
 It is a child class of the Wasabi class.
 """
 import logging
-from .client import Wasabi
+from .client import Client
 import botocore.client
 from botocore.exceptions import ClientError
 
 
-class WasabiUser(Wasabi):
+class User(Client):
     def __init__(self, user_name: str = "") -> None:
         """
         Initialize the WasabiUser class.

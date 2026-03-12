@@ -1,5 +1,5 @@
 """
-Characterization tests for WasabiGroup.
+Characterization tests for Group.
 Documents current behavior as-is, including known quirks.
 """
 import json
@@ -8,20 +8,20 @@ from unittest.mock import patch, MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.group import WasabiGroup
+from wasabi.group import Group
 
 
 @pytest.fixture
 def mock_nonexistent_group(mock_boto3_client):
-    """WasabiGroup where group does NOT exist."""
+    """Group where group does NOT exist."""
     mock_boto3_client.list_groups.return_value = {"Groups": []}
-    group = WasabiGroup("devs")
+    group = Group("devs")
     return group, mock_boto3_client
 
 
 @pytest.fixture
 def mock_existing_group(mock_boto3_client):
-    """WasabiGroup where group exists with members and policies."""
+    """Group where group exists with members and policies."""
     mock_boto3_client.list_groups.return_value = {
         "Groups": [
             {"GroupName": "devs", "Arn": "arn:aws:iam::123456789012:group/devs"}
@@ -40,7 +40,7 @@ def mock_existing_group(mock_boto3_client):
     }
     mock_boto3_client.list_group_policies.return_value = {"PolicyNames": []}
     mock_boto3_client.get_waiter.return_value = MagicMock()
-    group = WasabiGroup("devs")
+    group = Group("devs")
     return group, mock_boto3_client
 
 

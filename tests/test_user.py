@@ -1,5 +1,5 @@
 """
-Characterization tests for WasabiUser.
+Characterization tests for User.
 Documents current behavior as-is, including known quirks.
 """
 from unittest.mock import patch, MagicMock
@@ -7,22 +7,22 @@ from unittest.mock import patch, MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.user import WasabiUser
+from wasabi.user import User
 
 
 @pytest.fixture
 def mock_nonexistent_user(mock_boto3_client):
-    """WasabiUser where user does NOT exist."""
+    """User where user does NOT exist."""
     mock_boto3_client.get_user.side_effect = ClientError(
         {"Error": {"Code": "NoSuchEntity", "Message": "not found"}}, "GetUser"
     )
-    user = WasabiUser("alice")
+    user = User("alice")
     return user, mock_boto3_client
 
 
 @pytest.fixture
 def mock_existing_user(mock_boto3_client):
-    """WasabiUser where user exists with one API key."""
+    """User where user exists with one API key."""
     mock_boto3_client.get_user.return_value = {
         "User": {"UserName": "alice", "Arn": "arn:aws:iam::123456789012:user/alice"}
     }
@@ -31,7 +31,7 @@ def mock_existing_user(mock_boto3_client):
             {"AccessKeyId": "AKIA1111", "Status": "Active"}
         ]
     }
-    user = WasabiUser("alice")
+    user = User("alice")
     return user, mock_boto3_client
 
 
@@ -82,7 +82,7 @@ class TestUserExists:
             {"Error": {"Code": "ServiceFailure", "Message": "boom"}}, "GetUser"
         )
         mock_boto3_client.list_access_keys.return_value = {"AccessKeyMetadata": []}
-        user = WasabiUser("alice")
+        user = User("alice")
         mock_boto3_client.get_user.side_effect = ClientError(
             {"Error": {"Code": "ServiceFailure", "Message": "boom"}}, "GetUser"
         )

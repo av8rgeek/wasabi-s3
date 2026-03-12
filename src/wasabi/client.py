@@ -17,7 +17,7 @@ class DateTimeEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-class WasabiEndpoints(Enum):
+class Endpoint(Enum):
     """
     This class is an Enum of Wasabi endpoints.  It is used when determining the
     endpoint for the Wasabi client based on the region.
@@ -52,37 +52,37 @@ class WasabiEndpoints(Enum):
         return name.upper().replace("-", "_")
 
 
-WasabiEndpoints.S3_ENDPOINTS = [
-    # This has to be defined outside the enum class because the WasabiEndpoints class
+Endpoint.S3_ENDPOINTS = [
+    # This has to be defined outside the enum class because the Endpoint class
     # is not fully defined until the end of the class definition
-    WasabiEndpoints.S3.value,
-    WasabiEndpoints.US_EAST_1.value,
-    WasabiEndpoints.US_EAST_2.value,
-    WasabiEndpoints.US_CENTRAL_1.value,
-    WasabiEndpoints.US_WEST_1.value,
-    WasabiEndpoints.US_WEST_2.value,
-    WasabiEndpoints.CA_CENTRAL_1.value,
-    WasabiEndpoints.EU_CENTRAL_1.value,
-    WasabiEndpoints.EU_CENTRAL_2.value,
-    WasabiEndpoints.EU_WEST_1.value,
-    WasabiEndpoints.EU_WEST_2.value,
-    WasabiEndpoints.AP_NORTHEAST_1.value,
-    WasabiEndpoints.AP_NORTHEAST_2.value,
-    WasabiEndpoints.AP_SOUTHEAST_1.value,
-    WasabiEndpoints.AP_SOUTHEAST_2.value,
+    Endpoint.S3.value,
+    Endpoint.US_EAST_1.value,
+    Endpoint.US_EAST_2.value,
+    Endpoint.US_CENTRAL_1.value,
+    Endpoint.US_WEST_1.value,
+    Endpoint.US_WEST_2.value,
+    Endpoint.CA_CENTRAL_1.value,
+    Endpoint.EU_CENTRAL_1.value,
+    Endpoint.EU_CENTRAL_2.value,
+    Endpoint.EU_WEST_1.value,
+    Endpoint.EU_WEST_2.value,
+    Endpoint.AP_NORTHEAST_1.value,
+    Endpoint.AP_NORTHEAST_2.value,
+    Endpoint.AP_SOUTHEAST_1.value,
+    Endpoint.AP_SOUTHEAST_2.value,
 ]
 
 
-class Wasabi:
+class Client:
     """
     This class is for general Wasabi operations that do not require a specific object.
     It's also the parent class for the specific classes of Wasabi objects.
 
     Child classes:
-    - WasabiBucket
-    - WasabiGroup
-    - WasabiUser
-    - WasabiPolicy
+    - Bucket
+    - Group
+    - User
+    - Policy
     """
 
     __schema_user: dict = {
@@ -382,8 +382,8 @@ An complete schema would look similar to this example:
         # so we only want to do it once and only if needed.
         self._billing_data: dict = {}
         self.request_timeout: int = 30
-        self.iam_region: str = WasabiEndpoints.to_lower(WasabiEndpoints.IAM.name)
-        self.sts_region: str = WasabiEndpoints.to_lower(WasabiEndpoints.STS.name)
+        self.iam_region: str = Endpoint.to_lower(Endpoint.IAM.name)
+        self.sts_region: str = Endpoint.to_lower(Endpoint.STS.name)
 
     def get_example_schema(self) -> str:
         return self.__schema_example
@@ -392,18 +392,18 @@ An complete schema would look similar to this example:
         if not self._access_key_id or not self._secret_access_key:
             raise ValueError("Missing Wasabi credentials")
 
-        if WasabiEndpoints.to_upper(region) in WasabiEndpoints.__members__:
-            region = WasabiEndpoints.to_lower(region)
+        if Endpoint.to_upper(region) in Endpoint.__members__:
+            region = Endpoint.to_lower(region)
         else:
             raise Exception(f"Invalid Wasabi region ({region})")
 
-        endpoint: str = WasabiEndpoints[WasabiEndpoints.to_upper(region)].value
+        endpoint: str = Endpoint[Endpoint.to_upper(region)].value
         client_type: str = self.__determine_client_type(region)
 
         # This is a special case where "s3" is not a valid region for the AWS SDK/API, but I want
         # to use it while retaining the primary endpoint for us-east-1
         if region == "s3" or region == "iam" or region == "sts":
-            region = WasabiEndpoints.to_lower(WasabiEndpoints.US_EAST_1.name)
+            region = Endpoint.to_lower(Endpoint.US_EAST_1.name)
 
         if client_type == "billing":
             raise ValueError("Billing API does not use a boto3 client. Use get_billing_data() instead.")
@@ -421,8 +421,8 @@ An complete schema would look similar to this example:
         """
         Use this to determine the client type based on the region.
         """
-        uppercase_region: str = WasabiEndpoints.to_upper(region)
-        endpoint: str = WasabiEndpoints[uppercase_region].value
+        uppercase_region: str = Endpoint.to_upper(region)
+        endpoint: str = Endpoint[uppercase_region].value
         endpoint_hostname: str = endpoint.split("/")[-1]
         client_type: str = endpoint_hostname.split(".")[0]
         return client_type

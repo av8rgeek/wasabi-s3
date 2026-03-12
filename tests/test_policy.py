@@ -1,5 +1,5 @@
 """
-Characterization tests for WasabiPolicy.
+Characterization tests for Policy.
 Documents current behavior as-is, including known quirks.
 """
 import json
@@ -8,23 +8,23 @@ from unittest.mock import patch, MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.policy import WasabiPolicy
+from wasabi.policy import Policy
 
 
 @pytest.fixture
 def mock_nonexistent_policy(mock_boto3_client):
-    """WasabiPolicy where policy does NOT exist."""
+    """Policy where policy does NOT exist."""
     mock_boto3_client.get_caller_identity.return_value = {"Account": "123456789012"}
     mock_boto3_client.get_policy.side_effect = ClientError(
         {"Error": {"Code": "NoSuchEntity", "Message": "not found"}}, "GetPolicy"
     )
-    policy = WasabiPolicy("test-policy")
+    policy = Policy("test-policy")
     return policy, mock_boto3_client
 
 
 @pytest.fixture
 def mock_existing_policy(mock_boto3_client):
-    """WasabiPolicy where policy exists."""
+    """Policy where policy exists."""
     mock_boto3_client.get_caller_identity.return_value = {"Account": "123456789012"}
     mock_boto3_client.get_policy.return_value = {
         "Policy": {
@@ -49,7 +49,7 @@ def mock_existing_policy(mock_boto3_client):
             "IsDefaultVersion": True,
         }
     }
-    policy = WasabiPolicy("test-policy")
+    policy = Policy("test-policy")
     return policy, mock_boto3_client
 
 

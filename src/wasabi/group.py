@@ -1,11 +1,11 @@
 import json
 import logging
-from .client import Wasabi
+from .client import Client
 from botocore.exceptions import ClientError
 import botocore.client
 
 
-class WasabiGroup(Wasabi):
+class Group(Client):
     def __init__(self, group_name: str) -> None:
         if not isinstance(group_name, str) or not group_name.strip():
             raise ValueError("group_name must be a non-empty string")
