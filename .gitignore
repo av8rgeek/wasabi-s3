@@ -9,6 +9,13 @@
 # Compiled Python bytecode
 __pycache__/
 *.py[cod]
+*.pyo
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
 
 # Log files
 *.log
@@ -37,5 +44,15 @@ Thumbs.db
 
 
 # Virtual environments
-.venv
+.venv/
 .envrc
+
+# uv
+uv.lock
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
