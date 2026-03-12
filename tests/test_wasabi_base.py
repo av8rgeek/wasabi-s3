@@ -84,22 +84,24 @@ class TestWasabiInit:
 
     def test_reads_credentials_from_env(self):
         w = Wasabi()
-        assert w.aws_access_key_id == "test-access-key"
-        assert w.aws_secret_access_key == "test-secret-key"
+        assert w._access_key_id == "test-access-key"
+        assert w._secret_access_key == "test-secret-key"
 
-    def test_credentials_are_public_attributes(self):
-        """Current behavior: credentials are public. Documented for refactor."""
+    def test_credentials_are_protected_attributes(self):
+        """Credentials use single underscore to signal protected access."""
         w = Wasabi()
-        assert hasattr(w, "aws_access_key_id")
-        assert hasattr(w, "aws_secret_access_key")
+        assert hasattr(w, "_access_key_id")
+        assert hasattr(w, "_secret_access_key")
+        assert not hasattr(w, "aws_access_key_id")
+        assert not hasattr(w, "aws_secret_access_key")
 
-    def test_missing_credentials_are_none(self, monkeypatch):
-        """Current behavior: getenv returns None when unset, not empty string."""
+    def test_missing_credentials_default_to_empty_string(self, monkeypatch):
+        """getenv uses empty string default so None is never stored."""
         monkeypatch.delenv("WASABI_ACCESS_KEY")
         monkeypatch.delenv("WASABI_SECRET_KEY")
         w = Wasabi()
-        assert w.aws_access_key_id is None
-        assert w.aws_secret_access_key is None
+        assert w._access_key_id == ""
+        assert w._secret_access_key == ""
 
     def test_default_request_timeout(self):
         w = Wasabi()
@@ -158,12 +160,12 @@ class TestWasabiNewClient:
         with pytest.raises(ValueError, match="Billing API does not use a boto3 client"):
             w._new_client("billing")
 
-    def test_assert_on_empty_credentials(self, monkeypatch, mock_boto3_client):
-        """Current behavior: uses assert for validation, which can be stripped with -O."""
+    def test_raises_valueerror_on_empty_credentials(self, monkeypatch, mock_boto3_client):
+        """Raises ValueError (not assert) so validation works with python -O."""
         monkeypatch.setenv("WASABI_ACCESS_KEY", "")
         monkeypatch.setenv("WASABI_SECRET_KEY", "")
         w = Wasabi()
-        with pytest.raises(AssertionError, match="Missing Wasabi credentials"):
+        with pytest.raises(ValueError, match="Missing Wasabi credentials"):
             w._new_client("us-east-1")
 
 

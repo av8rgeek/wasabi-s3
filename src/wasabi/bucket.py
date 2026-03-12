@@ -13,6 +13,8 @@ class WasabiBucket(Wasabi):
     This bucket is for creating, deleting, and managing individual Wasabi buckets.
     """
     def __init__(self, bucket_name: str, region: str = "", billing_data: dict | None = None) -> None:
+        if not isinstance(bucket_name, str) or not bucket_name.strip():
+            raise ValueError("bucket_name must be a non-empty string")
         self.__logger = logging.getLogger(__name__)
         if billing_data is None:
             billing_data = {}
@@ -148,8 +150,8 @@ class WasabiBucket(Wasabi):
             url: str = f"https://{self.endpoint.split('/')[-1]}/{self.bucket_name}"
             params: dict = {"force_delete": "true"}
             credentials: AWSRequestsAuth = AWSRequestsAuth(
-                aws_access_key=self.aws_access_key_id,
-                aws_secret_access_key=self.aws_secret_access_key,
+                aws_access_key=self._access_key_id,
+                aws_secret_access_key=self._secret_access_key,
                 aws_host=self.endpoint.split("/")[-1],
                 aws_region=self.__properties["region"],
                 aws_service="s3",

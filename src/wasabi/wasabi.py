@@ -356,8 +356,8 @@ An complete schema would look similar to this example:
             "object_count": 0
         }
         self.__logger = logging.getLogger(__name__)
-        self.aws_access_key_id: str = getenv("WASABI_ACCESS_KEY")
-        self.aws_secret_access_key: str = getenv("WASABI_SECRET_KEY")
+        self._access_key_id: str = getenv("WASABI_ACCESS_KEY", "")
+        self._secret_access_key: str = getenv("WASABI_SECRET_KEY", "")
         # Getting the billing data is a slow operation,
         # so we only want to do it once and only if needed.
         self._billing_data: dict = {}
@@ -369,9 +369,8 @@ An complete schema would look similar to this example:
         return self.__schema_example
 
     def _new_client(self, region: str) -> botocore.client:
-        assert (
-            self.aws_access_key_id != "" or self.aws_secret_access_key != ""
-        ), "Missing Wasabi credentials"
+        if not self._access_key_id or not self._secret_access_key:
+            raise ValueError("Missing Wasabi credentials")
 
         if WasabiEndpoints.to_upper(region) in WasabiEndpoints.__members__:
             region = WasabiEndpoints.to_lower(region)
@@ -391,8 +390,8 @@ An complete schema would look similar to this example:
 
         client = boto3.client(
             client_type,
-            aws_access_key_id=self.aws_access_key_id,
-            aws_secret_access_key=self.aws_secret_access_key,
+            aws_access_key_id=self._access_key_id,
+            aws_secret_access_key=self._secret_access_key,
             endpoint_url=endpoint,
             region_name=region,
         )
@@ -489,8 +488,8 @@ An complete schema would look similar to this example:
         # the trailing slash is critical to this API endpoint
         url: str = "https://billing.wasabisys.com/utilization/bucket/"
         credentials: dict = {
-            "id": self.aws_access_key_id,
-            "secret": self.aws_secret_access_key,
+            "id": self._access_key_id,
+            "secret": self._secret_access_key,
         }
         to_date: str = end_date.strftime("%Y-%m-%d")
         from_date: str = (end_date - timedelta(days=reporting_period_length)).strftime(
@@ -511,8 +510,8 @@ An complete schema would look similar to this example:
         self._billing_data = response.json()
         return self._billing_data
 
-    def export_billing_data(self) -> None:
-        with open("billing_data.json", "w") as f:
+    def export_billing_data(self, path: str = "billing_data.json") -> None:
+        with open(path, "w") as f:
             json.dump(self._billing_data, f, indent=4, cls=DateTimeEncoder)
 
 

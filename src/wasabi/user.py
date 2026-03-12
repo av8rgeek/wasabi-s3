@@ -14,6 +14,8 @@ class WasabiUser(Wasabi):
         """
         Initialize the WasabiUser class.
         """
+        if not isinstance(user_name, str) or not user_name.strip():
+            raise ValueError("user_name must be a non-empty string")
         super().__init__()
         self.__logger = logging.getLogger(__name__)
         self._client: botocore.client = self._new_client(self.iam_region)

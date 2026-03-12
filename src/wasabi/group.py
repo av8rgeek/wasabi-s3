@@ -7,6 +7,8 @@ import botocore.client
 
 class WasabiGroup(Wasabi):
     def __init__(self, group_name: str) -> None:
+        if not isinstance(group_name, str) or not group_name.strip():
+            raise ValueError("group_name must be a non-empty string")
         super().__init__()
         self.__logger = logging.getLogger(__name__)
         self._client: botocore.client = self._new_client(self.iam_region)

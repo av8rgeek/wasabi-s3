@@ -14,6 +14,8 @@ class WasabiPolicy(Wasabi):
         """
         Initialize the WasabiPolicy class
         """
+        if not isinstance(policy_name, str) or not policy_name.strip():
+            raise ValueError("policy_name must be a non-empty string")
         super().__init__()
         self.__logger = logging.getLogger(__name__)
         self._client: botocore.client = self._new_client(self.iam_region)
