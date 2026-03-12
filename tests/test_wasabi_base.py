@@ -9,7 +9,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from botocore.exceptions import ClientError
 
-from wasabi.wasabi import Wasabi, WasabiEndpoints, DateTimeEncoder, WasabiBillingApiAuthorization
+from wasabi.client import Wasabi, WasabiEndpoints, DateTimeEncoder, WasabiBillingApiAuthorization
 
 
 class TestWasabiEndpoints:

@@ -78,12 +78,151 @@ class Wasabi:
     This class is for general Wasabi operations that do not require a specific object.
     It's also the parent class for the specific classes of Wasabi objects.
 
-    Chld classes:
+    Child classes:
     - WasabiBucket
     - WasabiGroup
     - WasabiUser
     - WasabiPolicy
     """
+
+    __schema_user: dict = {
+        # Example:
+        #     {
+        #         "name": "jimbob",
+        #         "arn": "arn:aws:iam::123456789012:user/jimbob",
+        #         "api-keys": {
+        #             "<WASABI_KEY_ID_1>": {
+        #                 "secret-key": "",
+        #                 "status": "Active"
+        #             },
+        #             "<WASABI_KEY_ID_2>": {
+        #                 "secret-key": "",
+        #                 "status": "Disabled"
+        #             }
+        #         }
+        #     }
+        "name": "",
+        "arn": "",
+        "api-keys": {}  #*  Max 2 keys per user
+    }
+
+    __schema_group: dict = {
+        # Example:
+        #     {
+        #         "name: "admins"
+        #         "arn": "arn:aws:iam::123456789012:group/admins",
+        #         "members": [
+        #             "jimbob",
+        #             "jane"
+        #         ],
+        #         "attached-policies": [
+        #             "arn:aws:iam::123456789012:policy/admin-policy"
+        #         ],
+        #         "inline-policies": {
+        #             "admin-policy": {
+        #                 "Version": "2012-10-17",
+        #                 "Statement": [
+        #                     {
+        #                         "Effect": "Allow",
+        #                         "Action": "s3:*",
+        #                         "Resource": "*"
+        #                     }
+        #                 ]
+        #             }
+        #         }
+        #     }
+        "name": "",
+        "arn": "",
+        "members": [],
+        "attached-policies": [],
+        "inline-policies": {}
+    }
+
+    __schema_policy: dict = {
+        # Example:
+        #     {
+        #         "name": "dev-policy": {
+        #         "arn": "arn:aws:iam::123456789012:policy/dev-policy",
+        #         "version": "v1",
+        #         "is-default-version": true,
+        #         "actions": [
+        #             "s3:AbortMultiPartUpload",
+        #             "s3:DeleteObject",
+        #             "s3:GetObject",
+        #             "s3:ListBucket",
+        #             "s3:PutObject"
+        #         ],
+        #         "resources": [
+        #             "arn:aws:s3::123456789012:bucket1"
+        #         ]
+        #     }
+        "name": "",
+        "arn": "",
+        "version": "",
+        "is-default-version": True,  # This is a boolean, value is a default
+        "actions": [],
+        "resources": [],
+    }
+
+    __schema_bucket: dict = {
+        # The key is the bucket name and this dict is the value.
+        #
+        # Example:
+        #     {
+        #         "name": "my_bucket",
+        #         "arn": "arn:aws:s3:::my_bucket",
+        #         "region": "us-east-1",
+        #         "storage_class": "hot",
+        #         "bucket_policy": {
+        #             "Version": "2012-10-17",
+        #             "Statement": [
+        #                 {
+        #                     "Sid": "FullAccess",
+        #                     "Effect": "Allow",
+        #                     "Principal": {
+        #                         "AWS": "arn:aws:iam::123456789012:group/devs"
+        #                     },
+        #                     "Action": "*",
+        #                     "Resource": [
+        #                         "arn:aws:s3::123456789012:my_bucket"
+        #                         "arn:aws:s3::123456789012:my_bucket/*",
+        #                     ]
+        #                 }
+        #             ]
+        #         },
+        #         "lifecycle-rules": {},
+        #         "versioning": False,
+        #         "gb_used": 1234.567,
+        #         "object_count": 381579
+        #     }
+        "name": "",
+        "arn": "",
+        "region": "",
+        "storage_class": "hot",
+        # Bucket policies are not normally used, but if they are they
+        # will be in a policy document format
+        "bucket_policy": {},
+        "lifecycle-rules": {},
+        "versioning": False,  # By default, no versioning is enabled
+        "gb_used": 0,
+        "object_count": 0
+    }
+
+    @property
+    def _schema_user(self) -> dict:
+        return self.__schema_user.copy()
+
+    @property
+    def _schema_group(self) -> dict:
+        return self.__schema_group.copy()
+
+    @property
+    def _schema_policy(self) -> dict:
+        return self.__schema_policy.copy()
+
+    @property
+    def _schema_bucket(self) -> dict:
+        return self.__schema_bucket.copy()
 
     def __init__(self) -> None:
         """
@@ -236,125 +375,6 @@ An complete schema would look similar to this example:
     ]
 }
 """
-        self.__schema_user: dict = {
-            # Example:
-            #     {
-            #         "name": "jimbob",
-            #         "arn": "arn:aws:iam::123456789012:user/jimbob",
-            #         "api-keys": {
-            #             "<WASABI_KEY_ID_1>": {
-            #                 "secret-key": "",
-            #                 "status": "Active"
-            #             },
-            #             "<WASABI_KEY_ID_2>": {
-            #                 "secret-key": "",
-            #                 "status": "Disabled"
-            #             }
-            #         }
-            #     }
-            "name": "",
-            "arn": "",
-            "api-keys": {}  #*  Max 2 keys per user
-        }
-        self.__schema_group: dict = {
-            # Example:
-            #     {
-            #         "name: "admins"
-            #         "arn": "arn:aws:iam::123456789012:group/admins",
-            #         "members": [
-            #             "jimbob",
-            #             "jane"
-            #         ],
-            #         "attached-policies": [
-            #             "arn:aws:iam::123456789012:policy/admin-policy"
-            #         ],
-            #         "inline-policies": {
-            #             "admin-policy": {
-            #                 "Version": "2012-10-17",
-            #                 "Statement": [
-            #                     {
-            #                         "Effect": "Allow",
-            #                         "Action": "s3:*",
-            #                         "Resource": "*"
-            #                     }
-            #                 ]
-            #             }
-            #         }
-            #     }
-            "name": "",
-            "arn": "",
-            "members": [],
-            "attached-policies": [],
-            "inline-policies": {}
-        }
-        self.__schema_policy: dict = {
-            # Example:
-            #     {
-            #         "name": "dev-policy": {
-            #         "arn": "arn:aws:iam::123456789012:policy/dev-policy",
-            #         "version": "v1",
-            #         "is-default-version": true,
-            #         "actions": [
-            #             "s3:AbortMultiPartUpload",
-            #             "s3:DeleteObject",
-            #             "s3:GetObject",
-            #             "s3:ListBucket",
-            #             "s3:PutObject"
-            #         ],
-            #         "resources": [
-            #             "arn:aws:s3::123456789012:bucket1"
-            #         ]
-            #     }
-            "name": "",
-            "arn": "",
-            "version": "",
-            "is-default-version": True,  # This is a boolean, value is a default
-            "actions": [],
-            "resources": [],
-        }
-        self.__schema_bucket: dict = {
-            # The key is the bucket name and this dict is the value.
-            #
-            # Example:
-            #     {
-            #         "name": "my_bucket",
-            #         "arn": "arn:aws:s3:::my_bucket",
-            #         "region": "us-east-1",
-            #         "storage_class": "hot",
-            #         "bucket_policy": {
-            #             "Version": "2012-10-17",
-            #             "Statement": [
-            #                 {
-            #                     "Sid": "FullAccess",
-            #                     "Effect": "Allow",
-            #                     "Principal": {
-            #                         "AWS": "arn:aws:iam::123456789012:group/devs"
-            #                     },
-            #                     "Action": "*",
-            #                     "Resource": [
-            #                         "arn:aws:s3::123456789012:my_bucket"
-            #                         "arn:aws:s3::123456789012:my_bucket/*",
-            #                     ]
-            #                 }
-            #             ]
-            #         },
-            #         "lifecycle-rules": {},
-            #         "versioning": False,
-            #         "gb_used": 1234.567,
-            #         "object_count": 381579
-            #     }
-            "name": "",
-            "arn": "",
-            "region": "",
-            "storage_class": "hot",
-            # Bucket policies are not normally used, but if they are they
-            # will be in a policy document format
-            "bucket_policy": {},
-            "lifecycle-rules": {},
-            "versioning": False,  # By default, no versioning is enabled
-            "gb_used": 0,
-            "object_count": 0
-        }
         self.__logger = logging.getLogger(__name__)
         self._access_key_id: str = getenv("WASABI_ACCESS_KEY", "")
         self._secret_access_key: str = getenv("WASABI_SECRET_KEY", "")

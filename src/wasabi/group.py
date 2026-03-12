@@ -1,6 +1,6 @@
 import json
 import logging
-from .wasabi import Wasabi, DateTimeEncoder
+from .client import Wasabi
 from botocore.exceptions import ClientError
 import botocore.client
 
@@ -14,7 +14,7 @@ class WasabiGroup(Wasabi):
         self._client: botocore.client = self._new_client(self.iam_region)
         self.group_name: str = group_name
         self.arn: str = ""
-        self.__properties: dict = self._Wasabi__schema_group.copy()
+        self.__properties: dict = self._schema_group
         self.__properties["name"] = group_name
         if self.group_exists():
             self.__properties["arn"] = self.arn

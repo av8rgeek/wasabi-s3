@@ -1,12 +1,8 @@
-import logging
 from .bucket import WasabiBucket
 from .group import WasabiGroup
 from .user import WasabiUser
 from .policy import WasabiPolicy
-from .wasabi import Wasabi, DateTimeEncoder
-
-# Set up logging for everyone to use
-loggers = logging.getLogger(__name__)
+from .client import Wasabi, DateTimeEncoder
 
 # For those people who want to leverage the
 # from wasabi import * syntax:

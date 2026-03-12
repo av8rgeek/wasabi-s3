@@ -2,9 +2,8 @@
 The WasabiUser class is used to represent and manage a single Wasabi user.
 It is a child class of the Wasabi class.
 """
-import json
 import logging
-from .wasabi import Wasabi
+from .client import Wasabi
 import botocore.client
 from botocore.exceptions import ClientError
 
@@ -20,7 +19,7 @@ class WasabiUser(Wasabi):
         self.__logger = logging.getLogger(__name__)
         self._client: botocore.client = self._new_client(self.iam_region)
         self.username: str = user_name
-        self.__properties: dict = self._Wasabi__schema_user.copy()
+        self.__properties: dict = self._schema_user
         self.__properties["name"] = user_name
         if self.user_exists():
             self.__update_arn_property()

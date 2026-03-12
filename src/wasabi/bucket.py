@@ -1,7 +1,7 @@
 import json
 import requests
 import logging
-from .wasabi import Wasabi, WasabiEndpoints
+from .client import Wasabi, WasabiEndpoints
 import botocore.client
 import botocore.waiter
 from botocore.exceptions import ClientError
@@ -34,7 +34,7 @@ class WasabiBucket(Wasabi):
         region = WasabiEndpoints.to_lower(region)
         self.bucket_name: str = bucket_name
         self._client: botocore.client = self._new_client(region)
-        self.__properties: dict = self._Wasabi__schema_bucket.copy()
+        self.__properties: dict = self._schema_bucket
         self.__properties["name"] = bucket_name
         self.__properties["arn"] = f"arn:aws:s3:::{self.__properties['name']}"
         self.__properties["region"] = region

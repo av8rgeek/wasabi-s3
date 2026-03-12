@@ -1,6 +1,6 @@
 import json
 import logging
-from .wasabi import Wasabi, DateTimeEncoder
+from .client import Wasabi
 from botocore.exceptions import ClientError
 import botocore.client
 
@@ -20,7 +20,7 @@ class WasabiPolicy(Wasabi):
         self.__logger = logging.getLogger(__name__)
         self._client: botocore.client = self._new_client(self.iam_region)
         self.policy_name: str = policy_name
-        self.__properties: dict = self._Wasabi__schema_policy.copy()
+        self.__properties: dict = self._schema_policy
         self.__properties["name"] = policy_name
         self.__properties["arn"] = self.get_arn()
         self.__properties["document"] = {
