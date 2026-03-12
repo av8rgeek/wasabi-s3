@@ -119,12 +119,6 @@ class TestWasabiInit:
         wasabi = Client()
         assert wasabi._billing_data == {}
 
-    def test_get_example_schema_returns_string(self):
-        wasabi = Client()
-        schema = wasabi.get_example_schema()
-        assert isinstance(schema, str)
-        assert '"users"' in schema
-        assert '"buckets"' in schema
 
 
 class TestWasabiNewClient:

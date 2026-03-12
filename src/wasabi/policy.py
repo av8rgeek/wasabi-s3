@@ -49,15 +49,13 @@ class Policy(Client):
 
     def get_arn(self) -> str:
         """
-        Use this to get the ARN for the bucket
+        Get the ARN for the policy.
         """
-        try:
-            sts_client: botocore.client.BaseClient = self._create_client(self.sts_region)
-            account_id: str = sts_client.get_caller_identity()["Account"]
-            return f"arn:aws:iam::{account_id}:policy/{self.policy_name}"
-        except ClientError as e:
-            self.__logger.error(f"Error getting ARN: {e}")
-            return ""
+        arn: str = ""
+        account_id: str = self.get_account_id()
+        if account_id:
+            arn = f"arn:aws:iam::{account_id}:policy/{self.policy_name}"
+        return arn
 
     def policy_exists(self) -> bool:
         """
@@ -156,7 +154,7 @@ class Policy(Client):
         """
         return self.__properties["document"]["Statement"][0]["Resource"]
 
-    def delete_policy(self) -> None:
+    def delete_policy(self) -> bool:
         """
         Delete the managed policy.
         This will only succeed if it not attached to any groups or users.
@@ -164,5 +162,58 @@ class Policy(Client):
         if self.policy_exists():
             try:
                 self._client.delete_policy(PolicyArn=self.__properties["arn"])
+                return True
             except ClientError as e:
                 self.__logger.error(f"Error deleting policy: {e}")
+                return False
+        return False
+
+    def list_versions(self) -> list[dict]:
+        """
+        List all versions of the managed policy.
+        """
+        versions: list[dict] = []
+        try:
+            response: dict = self._client.list_policy_versions(
+                PolicyArn=self.__properties["arn"]
+            )
+            versions = response["Versions"]
+        except ClientError as e:
+            self.__logger.error(f"Error listing policy versions: {e}")
+        return versions
+
+    def delete_version(self, version_id: str) -> bool:
+        """
+        Delete a specific non-default version of the managed policy.
+        """
+        response: bool = False
+        try:
+            self._client.delete_policy_version(
+                PolicyArn=self.__properties["arn"],
+                VersionId=version_id
+            )
+            response = True
+        except ClientError as e:
+            self.__logger.error(f"Error deleting policy version: {e}")
+        return response
+
+    def detach_from_all(self) -> bool:
+        """
+        Detach the policy from all groups and users it is attached to.
+        """
+        response: bool = False
+        arn: str = self.__properties["arn"]
+        try:
+            entities: dict = self._client.list_entities_for_policy(PolicyArn=arn)
+            for group in entities.get("PolicyGroups", []):
+                self._client.detach_group_policy(
+                    GroupName=group["GroupName"], PolicyArn=arn
+                )
+            for user in entities.get("PolicyUsers", []):
+                self._client.detach_user_policy(
+                    UserName=user["UserName"], PolicyArn=arn
+                )
+            response = True
+        except ClientError as e:
+            self.__logger.error(f"Error detaching policy: {e}")
+        return response

@@ -125,51 +125,54 @@ class Bucket(Client):
         Delete the bucket, if it exists.
         Non-empty buckets cannot not be deleted.
         """
+        response: bool = False
         if not self.bucket_exists():
             self.__logger.warning(f"Bucket {self.bucket_name} does not exist, skipping")
-            return True
-        try:
-            waiter: botocore.waiter = self._client.get_waiter("bucket_not_exists")
-            self._client.delete_bucket(Bucket=self.bucket_name)
-            waiter.wait(Bucket=self.bucket_name)
-            return True
-        except ClientError as e:
-            if e.response["Error"]["Code"] == "BucketNotEmpty":
-                self.__logger.error(f"Bucket {self.bucket_name} is not empty")
-            return False
+            response = True
+        else:
+            try:
+                waiter: botocore.waiter = self._client.get_waiter("bucket_not_exists")
+                self._client.delete_bucket(Bucket=self.bucket_name)
+                waiter.wait(Bucket=self.bucket_name)
+                response = True
+            except ClientError as e:
+                if e.response["Error"]["Code"] == "BucketNotEmpty":
+                    self.__logger.error(f"Bucket {self.bucket_name} is not empty")
+        return response
 
     def force_delete_bucket(self) -> bool:
         """
         Delete the bucket, even if it is not empty.
         """
+        response: bool = False
         if not self.bucket_exists():
             self.__logger.warning(f"Bucket {self.bucket_name} does not exist, skipping")
-            return True
-        try:
-            waiter: botocore.waiter = self._client.get_waiter("bucket_not_exists")
-            url: str = f"https://{self.endpoint.split('/')[-1]}/{self.bucket_name}"
-            params: dict = {"force_delete": "true"}
-            credentials: AWSRequestsAuth = AWSRequestsAuth(
-                aws_access_key=self._access_key_id,
-                aws_secret_access_key=self._secret_access_key,
-                aws_host=self.endpoint.split("/")[-1],
-                aws_region=self.__properties["region"],
-                aws_service="s3",
-            )
-            response: requests.Response = requests.delete(
-                url, params=params, auth=credentials, timeout=self.request_timeout
-            )
-            if response.status_code == 204:
-                waiter.wait(Bucket=self.bucket_name)
-                return True
-            else:
-                self.__logger.error(
-                    f"Error deleting bucket: ({response.status_code}) {response.text}"
+            response = True
+        else:
+            try:
+                waiter: botocore.waiter = self._client.get_waiter("bucket_not_exists")
+                url: str = f"https://{self.endpoint.split('/')[-1]}/{self.bucket_name}"
+                params: dict = {"force_delete": "true"}
+                credentials: AWSRequestsAuth = AWSRequestsAuth(
+                    aws_access_key=self._access_key_id,
+                    aws_secret_access_key=self._secret_access_key,
+                    aws_host=self.endpoint.split("/")[-1],
+                    aws_region=self.__properties["region"],
+                    aws_service="s3",
                 )
-                return False
-        except ClientError as e:
-            self.__logger.error(f"Error deleting bucket: {e}")
-            return False
+                http_response: requests.Response = requests.delete(
+                    url, params=params, auth=credentials, timeout=self.request_timeout
+                )
+                if http_response.status_code == 204:
+                    waiter.wait(Bucket=self.bucket_name)
+                    response = True
+                else:
+                    self.__logger.error(
+                        f"Error deleting bucket: ({http_response.status_code}) {http_response.text}"
+                    )
+            except ClientError as e:
+                self.__logger.error(f"Error deleting bucket: {e}")
+        return response
 
     def get_bucket_policy(self) -> dict:
         """
@@ -207,16 +210,77 @@ class Bucket(Client):
         """
         Returns the versioning status of the bucket
         """
-        versioning_enabled: bool = False
+        response: bool = False
         try:
-            response: dict = self._client.get_bucket_versioning(Bucket=self.bucket_name)
+            versioning: dict = self._client.get_bucket_versioning(Bucket=self.bucket_name)
+            if "Status" in versioning.keys():
+                if versioning["Status"] == "Enabled":
+                    response = True
         except ClientError as e:
             self.__logger.error(f"Error getting versioning: {e}")
-            return False
-        if "Status" in response.keys():
-            if response["Status"] == "Enabled":
-                versioning_enabled = True
-        return versioning_enabled
+        return response
+
+    def set_versioning(self, enabled: bool) -> bool:
+        """
+        Enable or suspend versioning on the bucket.
+        """
+        response: bool = False
+        status: str = "Enabled" if enabled else "Suspended"
+        try:
+            self._client.put_bucket_versioning(
+                Bucket=self.bucket_name,
+                VersioningConfiguration={"Status": status}
+            )
+            self.__properties["versioning"] = enabled
+            response = True
+        except ClientError as e:
+            self.__logger.error(f"Error setting versioning: {e}")
+        return response
+
+    def set_lifecycle(self, rules: dict) -> bool:
+        """
+        Set the lifecycle configuration on the bucket.
+        """
+        response: bool = False
+        try:
+            self._client.put_bucket_lifecycle_configuration(
+                Bucket=self.bucket_name,
+                LifecycleConfiguration=rules
+            )
+            self.__properties["lifecycle-rules"] = rules
+            response = True
+        except ClientError as e:
+            self.__logger.error(f"Error setting lifecycle: {e}")
+        return response
+
+    def set_bucket_policy(self, policy: dict) -> bool:
+        """
+        Set the bucket policy.
+        """
+        response: bool = False
+        try:
+            self._client.put_bucket_policy(
+                Bucket=self.bucket_name,
+                Policy=json.dumps(policy)
+            )
+            self.__properties["bucket_policy"] = policy
+            response = True
+        except ClientError as e:
+            self.__logger.error(f"Error setting bucket policy: {e}")
+        return response
+
+    def delete_bucket_policy(self) -> bool:
+        """
+        Remove the bucket policy.
+        """
+        response: bool = False
+        try:
+            self._client.delete_bucket_policy(Bucket=self.bucket_name)
+            self.__properties["bucket_policy"] = {}
+            response = True
+        except ClientError as e:
+            self.__logger.error(f"Error deleting bucket policy: {e}")
+        return response
 
     def list_objects(self) -> dict:
         """
@@ -232,27 +296,29 @@ class Bucket(Client):
         """
         Put an object in the bucket
         """
+        response: bool = False
         try:
             waiter: botocore.waiter = self._client.get_waiter("object_exists")
             self._client.put_object(Bucket=self.bucket_name, Key=key, Body=body)
             waiter.wait(Bucket=self.bucket_name, Key=key)
-            return True
+            response = True
         except ClientError as e:
             self.__logger.error(f"Error putting object: {e}")
-            return False
+        return response
 
     def delete_object(self, key: str) -> bool:
         """
         Delete an object from the bucket
         """
+        response: bool = False
         try:
             waiter: botocore.waiter = self._client.get_waiter("object_not_exists")
             self._client.delete_object(Bucket=self.bucket_name, Key=key)
             waiter.wait(Bucket=self.bucket_name, Key=key)
-            return True
+            response = True
         except ClientError as e:
             self.__logger.error(f"Error deleting object: {e}")
-            return False
+        return response
 
     def get_size_gb(self, billing_data: dict | None = None) -> float:
         """

@@ -64,31 +64,30 @@ class Group(Client):
         """
         Return the users in the group as a list of usernames
         """
-        members: list = []
+        members: list[str] = []
         try:
             users: list = self._client.get_group(GroupName=self.group_name)["Users"]
+            for user in users:
+                members.append(user["UserName"])
         except ClientError as e:
             self.__logger.error(f"Error getting group members: {e}")
-            return []
-        for user in users:
-            members.append(user["UserName"])
         return members
 
     def get_members_arn(self) -> list[str]:
         """
         Return the users in the group as a list of ARNs
         """
-        members: list = []
+        members: list[str] = []
         try:
             users: list = self._client.get_group(GroupName=self.group_name)["Users"]
+            for user in users:
+                members.append(user["Arn"])
         except ClientError as e:
             self.__logger.error(f"Error getting group members: {e}")
-            return []
-        for user in users:
-            members.append(user["Arn"])
         return members
 
-    def delete_group(self) -> None:
+    def delete_group(self) -> bool:
+        response: bool = False
         if self.group_exists():
             try:
                 for user in self.get_members_username():
@@ -98,14 +97,15 @@ class Group(Client):
                 self._client.delete_group(GroupName=self.group_name)
                 self.__properties["members"] = []
                 self.__properties["attached-policies"] = []
+                response = True
             except ClientError as e:
                 self.__logger.error(f"Error deleting group: {e}")
+        return response
 
     def get_inline_group_policies(self) -> dict:
         policies: dict = {}
-        policy_names: dict = {}
         try:
-            policy_names = self._client.list_group_policies(GroupName=self.group_name)
+            policy_names: dict = self._client.list_group_policies(GroupName=self.group_name)
             for policy_name in policy_names["PolicyNames"]:
                 policy: dict = self._client.get_group_policy(
                     GroupName=self.group_name, PolicyName=policy_name
@@ -116,18 +116,21 @@ class Group(Client):
                 self.__logger.error(f"Error getting inline group policies: {e}")
             else:
                 self.__logger.warning(f"No inline policies for group {self.group_name}")
-            return {}
         return policies
 
-    def get_inline_group_policy(self) -> dict:
-        return_value: dict = {}
-        try:
-            return_value = self._client.get_group_policy(GroupName=self.group_name)
-            # self.__logger.debug(json.dumps(return_value, indent=4, cls=DateTimeEncoder))
-        except ClientError as e:
-            if e.response["Error"]["Code"] != "NoSuchEntity":
-                self.__logger.error(f"Error getting inline group policy: {e}")
-        return return_value
+    def get_inline_group_policy(self, policy_name: str) -> dict:
+        """
+        Return a single inline group policy document by name.
+        Checks local properties first, falls back to fetching from the API.
+        """
+        response: dict = {}
+        if policy_name in self.__properties["inline-policies"]:
+            response = self.__properties["inline-policies"][policy_name]
+        else:
+            policies: dict = self.get_inline_group_policies()
+            if policy_name in policies:
+                response = policies[policy_name]
+        return response
 
     def put_inline_group_policy(self, policy: dict) -> dict:
         return_value: dict = {}
@@ -140,15 +143,18 @@ class Group(Client):
                 self.__logger.error(f"Error writing inline group policy: {e}")
         return return_value
 
-    def delete_inline_group_policy(self, inline_policy_name:str = "") -> None:
+    def delete_inline_group_policy(self, inline_policy_name: str = "") -> bool:
+        response: bool = False
         if self.get_inline_group_policies():
             try:
                 self._client.delete_group_policy(GroupName=self.group_name, PolicyName=inline_policy_name)
                 self.__properties["inline-policies"] = {}
+                response = True
             except ClientError as e:
                 self.__logger.error(f"Error deleting inline group policy: {e}")
         else:
             self.__logger.warning(f"No inline policies for group {self.group_name}")
+        return response
 
     def get_attached_policies(self) -> list[str]:
         policies: list = []
@@ -162,38 +168,50 @@ class Group(Client):
             self.__logger.error(f"Error getting attached policies: {e}")
         return policies
 
-    def attach_managed_policy(self, policy_arn: str) -> None:
+    def attach_managed_policy(self, policy_arn: str) -> bool:
+        response: bool = False
         try:
             self._client.attach_group_policy(
                 GroupName=self.group_name, PolicyArn=policy_arn
             )
             self.__properties["attached-policies"].append(policy_arn)
+            response = True
         except ClientError as e:
             self.__logger.error(f"Error attaching managed policy: {e}")
+        return response
 
-    def detach_managed_policy(self, policy_arn: str) -> None:
+    def detach_managed_policy(self, policy_arn: str) -> bool:
+        response: bool = False
         try:
             self._client.detach_group_policy(
                 GroupName=self.group_name, PolicyArn=policy_arn
             )
             self.__properties["attached-policies"].remove(policy_arn)
+            response = True
         except ClientError as e:
             self.__logger.error(f"Error detaching managed policy: {e}")
+        return response
 
-    def add_member(self, username: str) -> None:
+    def add_member(self, username: str) -> bool:
+        response: bool = False
         try:
             waiter = self._client.get_waiter('user_exists')
             self._client.add_user_to_group(GroupName=self.group_name, UserName=username)
             waiter.wait(UserName=username)
             self.__properties["members"].append(username)
+            response = True
         except ClientError as e:
             self.__logger.error(f"Error adding member: {e}")
+        return response
 
-    def remove_member(self, username: str) -> None:
+    def remove_member(self, username: str) -> bool:
+        response: bool = False
         try:
             self._client.remove_user_from_group(
                 GroupName=self.group_name, UserName=username
             )
             self.__properties["members"].remove(username)
+            response = True
         except ClientError as e:
             self.__logger.error(f"Error removing member: {e}")
+        return response

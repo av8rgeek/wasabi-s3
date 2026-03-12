@@ -35,14 +35,14 @@ class User(Client):
         """
         Check if the user exists, return a boolean value.
         """
+        response: bool = False
         try:
             user: dict = self._client.get_user(UserName=self.username)
-            return True
+            response = True
         except ClientError as e:
-            if e.response["Error"]["Code"] == "NoSuchEntity":
-                return False
-            self.__logger.error(f"Error checking user existence: {e}")
-            return False
+            if e.response["Error"]["Code"] != "NoSuchEntity":
+                self.__logger.error(f"Error checking user existence: {e}")
+        return response
 
     def get_user(self) -> dict:
         """
@@ -195,4 +195,49 @@ class User(Client):
             self.__properties["api-keys"] = {}
         else:
             self.__logger.warning("Not all API keys were deleted")
+        return response
+
+    def get_groups(self) -> list[str]:
+        """
+        List the groups the user belongs to.
+        """
+        groups: list[str] = []
+        try:
+            response: dict = self._client.list_groups_for_user(UserName=self.username)
+            for group in response["Groups"]:
+                groups.append(group["GroupName"])
+        except ClientError as e:
+            self.__logger.error(f"Error getting groups for user: {e}")
+        return groups
+
+    def enable_api_key(self, access_key: str) -> bool:
+        """
+        Activate an API key for the user.
+        """
+        response: bool = False
+        try:
+            self._client.update_access_key(
+                UserName=self.username, AccessKeyId=access_key, Status="Active"
+            )
+            if access_key in self.__properties["api-keys"]:
+                self.__properties["api-keys"][access_key]["status"] = "Active"
+            response = True
+        except ClientError as e:
+            self.__logger.error(f"Error enabling API key: {e}")
+        return response
+
+    def disable_api_key(self, access_key: str) -> bool:
+        """
+        Deactivate an API key for the user.
+        """
+        response: bool = False
+        try:
+            self._client.update_access_key(
+                UserName=self.username, AccessKeyId=access_key, Status="Inactive"
+            )
+            if access_key in self.__properties["api-keys"]:
+                self.__properties["api-keys"][access_key]["status"] = "Inactive"
+            response = True
+        except ClientError as e:
+            self.__logger.error(f"Error disabling API key: {e}")
         return response

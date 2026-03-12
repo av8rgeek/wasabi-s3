@@ -227,152 +227,6 @@ class Client:
         Initialize the Wasabi class.  We don't need to create a client here
         because that will be set up in child classes and
         """
-        self.__schema_example: str = """
-An complete schema would look similar to this example:
-{
-    "users": [
-        {
-            "name": "jimbob",
-            "arn": "arn:aws:iam::123456789012:user/jimbob",
-            "api-keys": {
-                "<WASABI_KEY_ID_1>": {
-                    "secret-key": "",
-                    "status": "Active"
-                },
-                "<WASABI_KEY_ID_2>": {
-                    "secret-key": "",
-                    "status": "Disabled"
-                }
-            }
-        },
-        {
-            "name": "jane",
-            "arn": "arn:aws:iam::123456789012:user/jane",
-            "api-keys": {
-                "<WASABI_KEY_ID_1>": {
-                    "secret-key": "",
-                    "status": "Active"
-                },
-                "<WASABI_KEY_ID_2>": {
-                    "secret-key": "",
-                    "status": "Disabled"
-                }
-            }
-        }
-    ],
-    "groups": [
-        {
-            "name": "admins",
-            "arn": "arn:aws:iam::123456789012:group/admins",
-            "members": [
-                "jimbob",
-                "jane"
-            ],
-            "attached-policies": [
-                "arn:aws:iam::123456789012:policy/admin-policy"
-            ],
-            "inline-policies": {
-                "admin-policy": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": "s3:*",
-                            "Resource": "*"
-                        }
-                    ]
-                }
-            }
-        },
-        {
-            "name": "devs",
-            "arn": "arn:aws:iam::123456789012:group/devs",
-            "members": [
-                "jimbob"
-            ],
-            "attached-policies": [
-                "arn:aws:iam::123456789012:policy/dev-policy"
-            ],
-            "inline-policies": {
-                "dev-policy": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": "s3:*",
-                            "Resource": "*"
-                        }
-                    ]
-                }
-            }
-        }
-    ],
-    "policies": [
-        {
-            "name": "admin-policy",
-            "arn": "arn:aws:iam::123456789012:policy/admin-policy",
-            "version": "v1",
-            "is-default-version": true,
-            "actions": [
-                "s3:*"
-            ],
-            "resources": [
-                "arn:aws:s3::123456789012:bucket1"
-            ]
-        },
-        {
-            "name": "dev-policy",
-            "arn": "arn:aws:iam::123456789012:policy/dev-policy",
-            "version": "v1",
-            "is-default-version": true,
-            "actions": [
-                "s3:AbortMultiPartUpload",
-                "s3:DeleteObject",
-                "s3:GetObject",
-                "s3:ListBucket",
-                "s3:PutObject"
-            ],
-            "resources": [
-                "arn:aws:s3::123456789012:bucket1"
-            ]
-        }
-    ],
-    "buckets": [
-        { 
-            "name": "my_bucket",
-            "arn": "arn:aws:s3:::my_bucket",
-            "region": "us-west-1",
-            "storage_class": "hot",
-            "bucket_policy": {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Sid": "FullAccess",
-                        "Effect": "Allow",
-                        "Principal": {
-                            "AWS": [
-                                "arn:aws:iam::123456789012:group/devs"
-                            ]
-                        },
-                        "Action": [
-                            "s3:GetObject",
-                            "s3:ListBucket"
-                        ],
-                        "Resource": [
-                            "arn:aws:s3::123456789012:my_bucket"
-                            "arn:aws:s3::123456789012:my_bucket/*",
-                        ]
-                    }
-                ]
-            },
-            "lifecycle-rules": {},
-            "versioning": False,
-            "gb_used": 1234.567,
-            "object_count": 381579
-        }
-    ]
-}
-"""
         self.__logger = logging.getLogger(__name__)
         self._access_key_id: str = getenv("WASABI_ACCESS_KEY", "")
         self._secret_access_key: str = getenv("WASABI_SECRET_KEY", "")
@@ -382,9 +236,6 @@ An complete schema would look similar to this example:
         self.request_timeout: int = 30
         self.iam_region: str = Endpoint.to_lower(Endpoint.IAM.name)
         self.sts_region: str = Endpoint.to_lower(Endpoint.STS.name)
-
-    def get_example_schema(self) -> str:
-        return self.__schema_example
 
     def _create_client(self, region: str) -> botocore.client.BaseClient:
         if not self._access_key_id or not self._secret_access_key:
@@ -493,6 +344,18 @@ An complete schema would look similar to this example:
         except ClientError as e:
             self.__logger.error(f"Error getting users: {e}")
             return []
+
+    def get_account_id(self) -> str:
+        """
+        Get the Wasabi account ID using the STS API.
+        """
+        account_id: str = ""
+        try:
+            sts_client: botocore.client.BaseClient = self._create_client(self.sts_region)
+            account_id = sts_client.get_caller_identity()["Account"]
+        except ClientError as e:
+            self.__logger.error(f"Error getting account ID: {e}")
+        return account_id
 
     def get_billing_data(self) -> dict:
         """
