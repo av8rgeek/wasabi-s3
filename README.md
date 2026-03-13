@@ -5,7 +5,7 @@ A Python SDK for managing [Wasabi Cloud Storage](https://wasabi.com) resources. 
 ## Installation
 
 ```bash
-pip install wasabi-s3
+pip install wasabi-s3-sdk
 ```
 
 Requires Python 3.13+.

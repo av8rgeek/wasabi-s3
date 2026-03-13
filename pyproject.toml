@@ -3,11 +3,25 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "wasabi-s3"
+name = "wasabi-s3-sdk"
 version = "0.1.0"
 description = "Python SDK for Wasabi Cloud Storage"
+readme = "README.md"
 license = "LGPL-2.1-or-later"
-requires-python = ">=3.13"
+authors = [{ name = "av8rgeek" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.10"
 dependencies = [
     "boto3",
     "botocore",
@@ -25,6 +39,11 @@ dev = [
     "types-requests",
 ]
 
+[project.urls]
+Homepage = "https://github.com/av8rgeek/wasabi-s3"
+Repository = "https://github.com/av8rgeek/wasabi-s3"
+Issues = "https://github.com/av8rgeek/wasabi-s3/issues"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/wasabi_s3"]
 
@@ -33,11 +52,11 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py310"
 line-length = 120
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.10"
 ignore_missing_imports = true
 warn_return_any = false
 warn_unused_configs = true
