@@ -1,4 +1,4 @@
-# wasabi-s3
+# wasabi-s3-sdk
 
 A Python SDK for managing [Wasabi Cloud Storage](https://wasabi.com) resources. Wraps Wasabi's S3-compatible and IAM APIs into a friendly interface for managing buckets, users, groups, and policies.
 
