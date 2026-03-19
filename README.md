@@ -19,6 +19,16 @@ export WASABI_ACCESS_KEY="your-access-key"
 export WASABI_SECRET_KEY="your-secret-key"
 ```
 
+## Request Timeout
+
+The SDK sets a default request timeout of 60 seconds, which is sufficient for most use cases. However, operations on large buckets containing many objects can take significantly longer. The `Client` class accepts an optional `request_timeout` parameter to adjust the timeout in seconds:
+
+```python
+from wasabi_s3 import Client
+
+client = Client(request_timeout=120)
+```
+
 ## Quick Start
 
 ### Buckets

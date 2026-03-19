@@ -222,7 +222,7 @@ class Client:
     def _schema_bucket(self) -> dict:
         return self.__schema_bucket.copy()
 
-    def __init__(self) -> None:
+    def __init__(self, request_timeout: int = 60) -> None:
         """
         Initialize the Wasabi class.  We don't need to create a client here
         because that will be set up in child classes and
@@ -233,7 +233,7 @@ class Client:
         # Getting the billing data is a slow operation,
         # so we only want to do it once and only if needed.
         self._billing_data: dict = {}
-        self.request_timeout: int = 30
+        self.request_timeout: int = request_timeout
         self.iam_region: str = Endpoint.to_lower(Endpoint.IAM.name)
         self.sts_region: str = Endpoint.to_lower(Endpoint.STS.name)
 

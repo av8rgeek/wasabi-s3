@@ -105,7 +105,7 @@ class TestWasabiInit:
 
     def test_default_request_timeout(self):
         wasabi = Client()
-        assert wasabi.request_timeout == 30
+        assert wasabi.request_timeout == 60
 
     def test_iam_region_value(self):
         wasabi = Client()
